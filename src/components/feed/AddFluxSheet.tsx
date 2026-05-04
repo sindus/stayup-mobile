@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from "react-native"
 import { X } from "lucide-react-native"
 import { addUserRepository, getScrapRepos, subscribeScrap } from "@/lib/api"

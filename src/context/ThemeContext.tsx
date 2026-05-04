@@ -31,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         nativewindColorScheme.set(resolved)
       }
     })
-  }, [])
+  }, [systemScheme])
 
   const setTheme = (t: Theme) => {
     setThemeState(t)

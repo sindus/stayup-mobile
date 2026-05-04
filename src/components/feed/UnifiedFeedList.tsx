@@ -1,4 +1,4 @@
-import { FlatList, View, Text, Pressable, RefreshControl, ActivityIndicator } from "react-native"
+import { FlatList, View, Text, Pressable, RefreshControl } from "react-native"
 import { Image } from "expo-image"
 import type {
   ChangelogItem,
