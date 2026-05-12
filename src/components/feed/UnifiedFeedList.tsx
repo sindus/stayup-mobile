@@ -11,6 +11,26 @@ import type {
 } from "@/types"
 import { formatDate, openUrl } from "@/lib/utils"
 
+function extractHostname(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "")
+  } catch {
+    return url
+  }
+}
+
+function extractChannelName(url: string): string {
+  try {
+    const { pathname } = new URL(url)
+    const atMatch = pathname.match(/^\/@(.+)/)
+    if (atMatch) return `@${atMatch[1]}`
+    const segments = pathname.split("/").filter(Boolean)
+    return segments[segments.length - 1] ?? url
+  } catch {
+    return url
+  }
+}
+
 type TaggedItem =
   | { provider: "changelog"; item: ChangelogItem }
   | { provider: "youtube"; item: YoutubeItem }
@@ -103,11 +123,9 @@ function ChangelogEntry({ item, repoUrl }: { item: ChangelogItem; repoUrl: strin
             {item.version}
           </Text>
         </View>
-        {item.datetime && (
-          <Text className="text-xs font-mono text-gray-400 dark:text-gray-500">
-            {formatDate(item.datetime)}
-          </Text>
-        )}
+        <Text className="text-xs font-mono text-gray-400 dark:text-gray-500">
+          {formatDate(item.datetime ?? item.executed_at)}
+        </Text>
       </View>
       {item.content && (
         <Text className="text-sm leading-relaxed text-gray-600 dark:text-gray-400" numberOfLines={2}>
@@ -148,9 +166,16 @@ function YoutubeEntry({ item }: { item: YoutubeItem }) {
         <Text className="text-sm font-medium leading-snug text-gray-900 dark:text-gray-100" numberOfLines={2}>
           {parsed?.title ?? "Sans titre"}
         </Text>
-        <Text className="mt-1 text-xs font-mono text-gray-400">
-          {formatDate(item.datetime ?? item.executed_at)}
-        </Text>
+        <View className="mt-1 flex-row items-center gap-2">
+          {parsed?.url && (
+            <Text className="text-xs font-mono text-rose-400">
+              {extractChannelName(parsed.url)}
+            </Text>
+          )}
+          <Text className="text-xs font-mono text-gray-500">
+            {formatDate(item.datetime ?? item.executed_at)}
+          </Text>
+        </View>
       </View>
     </Pressable>
   )
@@ -162,6 +187,8 @@ function RssEntry({ item }: { item: RssItem }) {
     parsed = JSON.parse(item.content) as RssItemContent
   } catch { /* ignore */ }
 
+  const source = parsed?.link ? extractHostname(parsed.link) : null
+
   return (
     <Pressable
       onPress={parsed?.link ? () => openUrl(parsed!.link) : undefined}
@@ -171,12 +198,15 @@ function RssEntry({ item }: { item: RssItem }) {
         <Text className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100" numberOfLines={1}>
           {parsed?.title ?? "Sans titre"}
         </Text>
-        {item.datetime && (
-          <Text className="text-xs font-mono text-gray-400">{formatDate(item.datetime)}</Text>
-        )}
+        <Text className="text-xs font-mono text-gray-500">
+          {formatDate(item.datetime ?? item.executed_at)}
+        </Text>
       </View>
+      {source && (
+        <Text className="mb-1 text-xs font-mono text-amber-400">{source}</Text>
+      )}
       {parsed?.summary && (
-        <Text className="text-sm leading-relaxed text-gray-600 dark:text-gray-400" numberOfLines={2}>
+        <Text className="text-sm leading-relaxed text-gray-400" numberOfLines={2}>
           {parsed.summary}
         </Text>
       )}
@@ -200,11 +230,11 @@ function ScrapEntry({ item }: { item: ScrapItem }) {
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
         {params?.url && (
-          <Text className="flex-1 text-xs font-mono text-gray-500 dark:text-gray-400" numberOfLines={1}>
+          <Text className="flex-1 text-xs font-mono text-green-400" numberOfLines={1}>
             {params.url}
           </Text>
         )}
-        <Text className="text-xs font-mono text-gray-400">{formatDate(item.executed_at)}</Text>
+        <Text className="text-xs font-mono text-gray-500">{formatDate(item.executed_at)}</Text>
       </View>
       {item.content && (
         <Text className="text-sm leading-relaxed text-gray-600 dark:text-gray-400" numberOfLines={2}>
