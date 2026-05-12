@@ -8,6 +8,7 @@ import type {
   RssItemContent,
   ScrapItem,
   ScrapItemParams,
+  TaggedItem,
 } from "@/types"
 import { formatDate, openUrl } from "@/lib/utils"
 
@@ -31,12 +32,6 @@ function extractChannelName(url: string): string {
   }
 }
 
-type TaggedItem =
-  | { provider: "changelog"; item: ChangelogItem }
-  | { provider: "youtube"; item: YoutubeItem }
-  | { provider: "rss"; item: RssItem }
-  | { provider: "scrap"; item: ScrapItem }
-
 function getItemDate(tagged: TaggedItem): string {
   const item = tagged.item
   if ("datetime" in item && item.datetime) return item.datetime
@@ -51,6 +46,7 @@ interface UnifiedFeedListProps {
   repositories?: { repository_id: number; url: string }[]
   loading?: boolean
   onRefresh?: () => void
+  onPressItem?: (tagged: TaggedItem) => void
 }
 
 export function UnifiedFeedList({
@@ -61,6 +57,7 @@ export function UnifiedFeedList({
   repositories = [],
   loading,
   onRefresh,
+  onPressItem,
 }: UnifiedFeedListProps) {
   const repoUrlMap = Object.fromEntries(repositories.map((r) => [r.repository_id, r.url]))
 
@@ -83,39 +80,52 @@ export function UnifiedFeedList({
     <FlatList
       data={all}
       keyExtractor={(_, i) => String(i)}
-      renderItem={({ item: tagged }) => (
-        <View className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-          {tagged.provider === "changelog" && (
-            <ChangelogEntry
-              item={tagged.item}
-              repoUrl={repoUrlMap[tagged.item.repository_id] ?? ""}
-            />
-          )}
-          {tagged.provider === "youtube" && <YoutubeEntry item={tagged.item} />}
-          {tagged.provider === "rss" && <RssEntry item={tagged.item} />}
-          {tagged.provider === "scrap" && <ScrapEntry item={tagged.item} />}
-        </View>
-      )}
+      renderItem={({ item: tagged }) => {
+        const onPress = onPressItem ? () => onPressItem(tagged) : undefined
+        return (
+          <View className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+            {tagged.provider === "changelog" && (
+              <ChangelogEntry
+                item={tagged.item}
+                repoUrl={repoUrlMap[tagged.item.repository_id] ?? ""}
+                onPress={onPress}
+              />
+            )}
+            {tagged.provider === "youtube" && <YoutubeEntry item={tagged.item} onPress={onPress} />}
+            {tagged.provider === "rss" && <RssEntry item={tagged.item} onPress={onPress} />}
+            {tagged.provider === "scrap" && <ScrapEntry item={tagged.item} onPress={onPress} />}
+          </View>
+        )
+      }}
       refreshControl={
-        onRefresh ? (
-          <RefreshControl refreshing={!!loading} onRefresh={onRefresh} />
-        ) : undefined
+        onRefresh ? <RefreshControl refreshing={!!loading} onRefresh={onRefresh} /> : undefined
       }
     />
   )
 }
 
-function ChangelogEntry({ item, repoUrl }: { item: ChangelogItem; repoUrl: string }) {
+function ChangelogEntry({
+  item,
+  repoUrl,
+  onPress,
+}: {
+  item: ChangelogItem
+  repoUrl: string
+  onPress?: () => void
+}) {
   const href = repoUrl ? `${repoUrl}/releases/tag/${item.version}` : undefined
   const repoName = repoUrl?.replace("https://github.com/", "") ?? "repository"
 
   return (
     <Pressable
-      onPress={href ? () => openUrl(href) : undefined}
+      onPress={onPress ?? (href ? () => openUrl(href) : undefined)}
       className="border-l-2 border-teal-400 pl-3 py-1"
     >
       <View className="mb-1 flex-row items-center gap-2">
-        <Text className="flex-1 text-xs font-mono text-gray-500 dark:text-gray-400" numberOfLines={1}>
+        <Text
+          className="flex-1 text-xs font-mono text-gray-500 dark:text-gray-400"
+          numberOfLines={1}
+        >
           {repoName}
         </Text>
         <View className="rounded bg-teal-50 px-1.5 py-0.5 dark:bg-teal-900/30">
@@ -128,25 +138,33 @@ function ChangelogEntry({ item, repoUrl }: { item: ChangelogItem; repoUrl: strin
         </Text>
       </View>
       {item.content && (
-        <Text className="text-sm leading-relaxed text-gray-600 dark:text-gray-400" numberOfLines={2}>
-          {item.content.replace(/#{1,6}\s/g, "").replace(/\r\n/g, " ").slice(0, 200)}
+        <Text
+          className="text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+          numberOfLines={2}
+        >
+          {item.content
+            .replace(/#{1,6}\s/g, "")
+            .replace(/\r\n/g, " ")
+            .slice(0, 200)}
         </Text>
       )}
     </Pressable>
   )
 }
 
-function YoutubeEntry({ item }: { item: YoutubeItem }) {
+function YoutubeEntry({ item, onPress }: { item: YoutubeItem; onPress?: () => void }) {
   let parsed: YoutubeItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as YoutubeItemContent
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const videoUrl = parsed?.link ?? parsed?.url
 
   return (
     <Pressable
-      onPress={videoUrl ? () => openUrl(videoUrl) : undefined}
+      onPress={onPress ?? (videoUrl ? () => openUrl(videoUrl) : undefined)}
       className="flex-row gap-3"
     >
       <View className="h-14 w-24 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
@@ -163,7 +181,10 @@ function YoutubeEntry({ item }: { item: YoutubeItem }) {
         )}
       </View>
       <View className="flex-1">
-        <Text className="text-sm font-medium leading-snug text-gray-900 dark:text-gray-100" numberOfLines={2}>
+        <Text
+          className="text-sm font-medium leading-snug text-gray-900 dark:text-gray-100"
+          numberOfLines={2}
+        >
           {parsed?.title ?? "Sans titre"}
         </Text>
         <View className="mt-1 flex-row items-center gap-2">
@@ -181,30 +202,33 @@ function YoutubeEntry({ item }: { item: YoutubeItem }) {
   )
 }
 
-function RssEntry({ item }: { item: RssItem }) {
+function RssEntry({ item, onPress }: { item: RssItem; onPress?: () => void }) {
   let parsed: RssItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as RssItemContent
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const source = parsed?.link ? extractHostname(parsed.link) : null
 
   return (
     <Pressable
-      onPress={parsed?.link ? () => openUrl(parsed!.link) : undefined}
+      onPress={onPress ?? (parsed?.link ? () => openUrl(parsed!.link) : undefined)}
       className="border-l-2 border-amber-400 pl-3 py-1"
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
-        <Text className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100" numberOfLines={1}>
+        <Text
+          className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100"
+          numberOfLines={1}
+        >
           {parsed?.title ?? "Sans titre"}
         </Text>
         <Text className="text-xs font-mono text-gray-500">
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
-      {source && (
-        <Text className="mb-1 text-xs font-mono text-amber-400">{source}</Text>
-      )}
+      {source && <Text className="mb-1 text-xs font-mono text-amber-400">{source}</Text>}
       {parsed?.summary && (
         <Text className="text-sm leading-relaxed text-gray-400" numberOfLines={2}>
           {parsed.summary}
@@ -214,18 +238,21 @@ function RssEntry({ item }: { item: RssItem }) {
   )
 }
 
-function ScrapEntry({ item }: { item: ScrapItem }) {
+function ScrapEntry({ item, onPress }: { item: ScrapItem; onPress?: () => void }) {
   const params: ScrapItemParams | null =
     typeof item.params === "string"
       ? (() => {
-          try { return JSON.parse(item.params) as ScrapItemParams }
-          catch { return null }
+          try {
+            return JSON.parse(item.params) as ScrapItemParams
+          } catch {
+            return null
+          }
         })()
       : (item.params as ScrapItemParams | null)
 
   return (
     <Pressable
-      onPress={params?.url ? () => openUrl(params.url) : undefined}
+      onPress={onPress ?? (params?.url ? () => openUrl(params.url) : undefined)}
       className="border-l-2 border-green-400 pl-3 py-1"
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
@@ -237,7 +264,10 @@ function ScrapEntry({ item }: { item: ScrapItem }) {
         <Text className="text-xs font-mono text-gray-500">{formatDate(item.executed_at)}</Text>
       </View>
       {item.content && (
-        <Text className="text-sm leading-relaxed text-gray-600 dark:text-gray-400" numberOfLines={2}>
+        <Text
+          className="text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+          numberOfLines={2}
+        >
           {item.content.slice(0, 200)}
         </Text>
       )}
