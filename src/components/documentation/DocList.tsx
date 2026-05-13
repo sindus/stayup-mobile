@@ -18,7 +18,7 @@ export function DocList() {
       <View className="flex-1 items-center justify-center gap-3">
         <Text className="text-sm text-red-500">{error}</Text>
         <Pressable onPress={refresh} className="rounded-lg bg-indigo-600 px-4 py-2">
-          <Text className="text-white">Réessayer</Text>
+          <Text className="text-white">{t.feed.retry}</Text>
         </Pressable>
       </View>
     )

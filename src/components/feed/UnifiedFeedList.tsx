@@ -11,6 +11,7 @@ import type {
   TaggedItem,
 } from "@/types"
 import { formatDate, openUrl } from "@/lib/utils"
+import { useLanguage } from "@/context/LanguageContext"
 
 function extractHostname(url: string): string {
   try {
@@ -59,6 +60,7 @@ export function UnifiedFeedList({
   onRefresh,
   onPressItem,
 }: UnifiedFeedListProps) {
+  const { t } = useLanguage()
   const repoUrlMap = Object.fromEntries(repositories.map((r) => [r.repository_id, r.url]))
 
   const all: TaggedItem[] = [
@@ -71,7 +73,7 @@ export function UnifiedFeedList({
   if (all.length === 0 && !loading) {
     return (
       <View className="flex-1 items-center justify-center py-16">
-        <Text className="text-sm italic text-gray-400">Aucun contenu disponible.</Text>
+        <Text className="text-sm italic text-gray-400">{t.feed.noContent}</Text>
       </View>
     )
   }
@@ -89,10 +91,11 @@ export function UnifiedFeedList({
                 item={tagged.item}
                 repoUrl={repoUrlMap[tagged.item.repository_id] ?? ""}
                 onPress={onPress}
+                repositoryLabel={t.viewer.repository}
               />
             )}
-            {tagged.provider === "youtube" && <YoutubeEntry item={tagged.item} onPress={onPress} />}
-            {tagged.provider === "rss" && <RssEntry item={tagged.item} onPress={onPress} />}
+            {tagged.provider === "youtube" && <YoutubeEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />}
+            {tagged.provider === "rss" && <RssEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />}
             {tagged.provider === "scrap" && <ScrapEntry item={tagged.item} onPress={onPress} />}
           </View>
         )
@@ -108,13 +111,15 @@ function ChangelogEntry({
   item,
   repoUrl,
   onPress,
+  repositoryLabel,
 }: {
   item: ChangelogItem
   repoUrl: string
   onPress?: () => void
+  repositoryLabel: string
 }) {
   const href = repoUrl ? `${repoUrl}/releases/tag/${item.version}` : undefined
-  const repoName = repoUrl?.replace("https://github.com/", "") ?? "repository"
+  const repoName = repoUrl?.replace("https://github.com/", "") ?? repositoryLabel
 
   return (
     <Pressable
@@ -152,7 +157,7 @@ function ChangelogEntry({
   )
 }
 
-function YoutubeEntry({ item, onPress }: { item: YoutubeItem; onPress?: () => void }) {
+function YoutubeEntry({ item, onPress, noTitle }: { item: YoutubeItem; onPress?: () => void; noTitle: string }) {
   let parsed: YoutubeItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as YoutubeItemContent
@@ -185,7 +190,7 @@ function YoutubeEntry({ item, onPress }: { item: YoutubeItem; onPress?: () => vo
           className="text-sm font-medium leading-snug text-gray-900 dark:text-gray-100"
           numberOfLines={2}
         >
-          {parsed?.title ?? "Sans titre"}
+          {parsed?.title ?? noTitle}
         </Text>
         <View className="mt-1 flex-row items-center gap-2">
           {parsed?.url && (
@@ -202,7 +207,7 @@ function YoutubeEntry({ item, onPress }: { item: YoutubeItem; onPress?: () => vo
   )
 }
 
-function RssEntry({ item, onPress }: { item: RssItem; onPress?: () => void }) {
+function RssEntry({ item, onPress, noTitle }: { item: RssItem; onPress?: () => void; noTitle: string }) {
   let parsed: RssItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as RssItemContent
@@ -222,7 +227,7 @@ function RssEntry({ item, onPress }: { item: RssItem; onPress?: () => void }) {
           className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100"
           numberOfLines={1}
         >
-          {parsed?.title ?? "Sans titre"}
+          {parsed?.title ?? noTitle}
         </Text>
         <Text className="text-xs font-mono text-gray-500">
           {formatDate(item.datetime ?? item.executed_at)}

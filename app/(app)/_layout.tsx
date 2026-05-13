@@ -1,10 +1,12 @@
 import { Tabs, Redirect } from "expo-router"
 import { BookOpen, Rss, User } from "lucide-react-native"
 import { useAuth } from "@/hooks/useAuth"
+import { useLanguage } from "@/context/LanguageContext"
 import { View, ActivityIndicator } from "react-native"
 
 export default function AppLayout() {
   const { session, loading } = useAuth()
+  const { t } = useLanguage()
 
   if (loading) {
     return (
@@ -33,21 +35,21 @@ export default function AppLayout() {
       <Tabs.Screen
         name="feed/index"
         options={{
-          title: "Feed",
+          title: t.tabs.feed,
           tabBarIcon: ({ color, size }) => <Rss color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="documentation/index"
         options={{
-          title: "Docs",
+          title: t.tabs.docs,
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="profile/index"
         options={{
-          title: "Profil",
+          title: t.tabs.profile,
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router"
 import { Image } from "expo-image"
 import { ChevronLeft } from "lucide-react-native"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
+import { useLanguage } from "@/context/LanguageContext"
 import { formatDate, openUrl } from "@/lib/utils"
 import type { TaggedItem, YoutubeItemContent, RssItemContent, ScrapItemParams } from "@/types"
 
@@ -39,29 +40,30 @@ function extractHostname(url: string): string {
   }
 }
 
-function getTitle(tagged: TaggedItem): string {
+function getTitle(tagged: TaggedItem, noTitle: string, scrapLabel: string): string {
   if (tagged.provider === "changelog") return tagged.item.version
   if (tagged.provider === "youtube") {
     try {
       const parsed = JSON.parse(tagged.item.content) as YoutubeItemContent
-      return parsed.title ?? "Sans titre"
+      return parsed.title ?? noTitle
     } catch {
-      return "Sans titre"
+      return noTitle
     }
   }
   if (tagged.provider === "rss") {
     try {
       const parsed = JSON.parse(tagged.item.content) as RssItemContent
-      return parsed.title ?? "Sans titre"
+      return parsed.title ?? noTitle
     } catch {
-      return "Sans titre"
+      return noTitle
     }
   }
-  return "Scrap"
+  return scrapLabel
 }
 
 export default function FeedDetailScreen() {
   const router = useRouter()
+  const { t } = useLanguage()
   const { item: tagged, repoUrl } = useSelectedFeedItemStore()
 
   if (!tagged) return null
@@ -81,17 +83,17 @@ export default function FeedDetailScreen() {
           className="flex-1 text-sm font-semibold text-gray-900 dark:text-gray-100"
           numberOfLines={1}
         >
-          {getTitle(tagged)}
+          {getTitle(tagged, t.viewer.noTitle, t.viewer.scrap)}
         </Text>
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
         {tagged.provider === "changelog" && (
-          <ChangelogDetail item={tagged.item} repoUrl={repoUrl} />
+          <ChangelogDetail item={tagged.item} repoUrl={repoUrl} repositoryLabel={t.viewer.repository} openOnGithub={t.viewer.openOnGithub} />
         )}
-        {tagged.provider === "youtube" && <YoutubeDetail item={tagged.item} />}
-        {tagged.provider === "rss" && <RssDetail item={tagged.item} />}
-        {tagged.provider === "scrap" && <ScrapDetail item={tagged.item} />}
+        {tagged.provider === "youtube" && <YoutubeDetail item={tagged.item} noTitle={t.viewer.noTitle} watchOnYoutube={t.viewer.watchOnYoutube} />}
+        {tagged.provider === "rss" && <RssDetail item={tagged.item} noTitle={t.viewer.noTitle} readArticle={t.viewer.readArticle} />}
+        {tagged.provider === "scrap" && <ScrapDetail item={tagged.item} visitWebsite={t.viewer.visitWebsite} />}
       </ScrollView>
     </SafeAreaView>
   )
@@ -100,11 +102,15 @@ export default function FeedDetailScreen() {
 function ChangelogDetail({
   item,
   repoUrl,
+  repositoryLabel,
+  openOnGithub,
 }: {
   item: import("@/types").ChangelogItem
   repoUrl: string
+  repositoryLabel: string
+  openOnGithub: string
 }) {
-  const repoName = repoUrl.replace("https://github.com/", "") || "repository"
+  const repoName = repoUrl.replace("https://github.com/", "") || repositoryLabel
   const href = repoUrl ? `${repoUrl}/releases/tag/${item.version}` : undefined
 
   return (
@@ -136,7 +142,7 @@ function ChangelogDetail({
           className="mt-6 rounded-lg bg-teal-50 px-4 py-2.5 dark:bg-teal-900/20"
         >
           <Text className="text-center text-sm font-medium text-teal-700 dark:text-teal-400">
-            Voir sur GitHub
+            {openOnGithub}
           </Text>
         </Pressable>
       )}
@@ -144,7 +150,7 @@ function ChangelogDetail({
   )
 }
 
-function YoutubeDetail({ item }: { item: import("@/types").YoutubeItem }) {
+function YoutubeDetail({ item, noTitle, watchOnYoutube }: { item: import("@/types").YoutubeItem; noTitle: string; watchOnYoutube: string }) {
   let parsed: YoutubeItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as YoutubeItemContent
@@ -158,7 +164,7 @@ function YoutubeDetail({ item }: { item: import("@/types").YoutubeItem }) {
   return (
     <View>
       <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100 leading-snug">
-        {parsed?.title ?? "Sans titre"}
+        {parsed?.title ?? noTitle}
       </Text>
 
       <View className="mb-4 flex-row items-center gap-3">
@@ -184,7 +190,7 @@ function YoutubeDetail({ item }: { item: import("@/types").YoutubeItem }) {
           className="rounded-lg bg-rose-50 px-4 py-2.5 dark:bg-rose-900/20"
         >
           <Text className="text-center text-sm font-medium text-rose-600 dark:text-rose-400">
-            Voir sur YouTube
+            {watchOnYoutube}
           </Text>
         </Pressable>
       )}
@@ -192,7 +198,7 @@ function YoutubeDetail({ item }: { item: import("@/types").YoutubeItem }) {
   )
 }
 
-function RssDetail({ item }: { item: import("@/types").RssItem }) {
+function RssDetail({ item, noTitle, readArticle }: { item: import("@/types").RssItem; noTitle: string; readArticle: string }) {
   let parsed: RssItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as RssItemContent
@@ -206,7 +212,7 @@ function RssDetail({ item }: { item: import("@/types").RssItem }) {
   return (
     <View>
       <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100 leading-snug">
-        {parsed?.title ?? "Sans titre"}
+        {parsed?.title ?? noTitle}
       </Text>
 
       <View className="mb-4 flex-row items-center gap-3">
@@ -226,7 +232,7 @@ function RssDetail({ item }: { item: import("@/types").RssItem }) {
           className="mt-6 rounded-lg bg-amber-50 px-4 py-2.5 dark:bg-amber-900/20"
         >
           <Text className="text-center text-sm font-medium text-amber-700 dark:text-amber-400">
-            Lire l'article
+            {readArticle}
           </Text>
         </Pressable>
       )}
@@ -234,7 +240,7 @@ function RssDetail({ item }: { item: import("@/types").RssItem }) {
   )
 }
 
-function ScrapDetail({ item }: { item: import("@/types").ScrapItem }) {
+function ScrapDetail({ item, visitWebsite }: { item: import("@/types").ScrapItem; visitWebsite: string }) {
   const params: ScrapItemParams | null =
     typeof item.params === "string"
       ? (() => {
@@ -271,7 +277,7 @@ function ScrapDetail({ item }: { item: import("@/types").ScrapItem }) {
           className="mt-6 rounded-lg bg-green-50 px-4 py-2.5 dark:bg-green-900/20"
         >
           <Text className="text-center text-sm font-medium text-green-700 dark:text-green-400">
-            Visiter le site
+            {visitWebsite}
           </Text>
         </Pressable>
       )}

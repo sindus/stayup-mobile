@@ -4,12 +4,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useLanguage } from "@/context/LanguageContext"
 
-const schema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(1, "Mot de passe requis"),
-})
-
-type FormData = z.infer<typeof schema>
+type FormData = { email: string; password: string }
 
 interface LoginFormProps {
   onSubmit: (email: string, password: string) => Promise<void>
@@ -19,6 +14,10 @@ interface LoginFormProps {
 
 export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
   const { t } = useLanguage()
+  const schema = z.object({
+    email: z.string().email(t.auth.emailInvalid),
+    password: z.string().min(1, t.auth.passwordRequired),
+  })
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })

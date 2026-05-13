@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { useAuth } from "@/hooks/useAuth"
 import { useFeed } from "@/hooks/useFeed"
+import { useLanguage } from "@/context/LanguageContext"
 import { UnifiedFeedList } from "@/components/feed/UnifiedFeedList"
 import { FeedFluxList } from "@/components/feed/FeedFluxList"
 import { AddFluxSheet } from "@/components/feed/AddFluxSheet"
@@ -14,6 +15,7 @@ import type { Provider, TaggedItem } from "@/types"
 export default function FeedScreen() {
   const router = useRouter()
   const { session } = useAuth()
+  const { t } = useLanguage()
   const userId = session?.userId ?? ""
   const { fluxes, connectors, loading, error, refresh } = useFeed(userId)
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
@@ -34,7 +36,7 @@ export default function FeedScreen() {
   }
 
   if (loading && !connectors) {
-    return <LoadingScreen message="Chargement du feed…" />
+    return <LoadingScreen message={t.feed.loading} />
   }
 
   if (error) {
@@ -42,7 +44,7 @@ export default function FeedScreen() {
       <View className="flex-1 items-center justify-center gap-3 bg-white dark:bg-gray-950">
         <Text className="text-sm text-red-500">{error}</Text>
         <Pressable onPress={refresh} className="rounded-lg bg-indigo-600 px-4 py-2">
-          <Text className="text-white">Réessayer</Text>
+          <Text className="text-white">{t.feed.retry}</Text>
         </Pressable>
       </View>
     )
