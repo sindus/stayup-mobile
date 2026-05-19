@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native"
 import { X } from "lucide-react-native"
-import { addUserRepository, getScrapRepos, subscribeScrap } from "@/lib/api"
+import { addUserRepository, createScrapRequest, getScrapRepos, subscribeScrap } from "@/lib/api"
 import { readApiUrl, readToken } from "@/lib/store"
 import { normalizeIdentifier, toRepositoryUrl } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
@@ -39,6 +39,9 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
   const [scrapRepos, setScrapRepos] = useState<ScrapRepository[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [scrapMode, setScrapMode] = useState<"select" | "request">("select")
+  const [requestUrl, setRequestUrl] = useState("")
+  const [requestSuccess, setRequestSuccess] = useState(false)
 
   useEffect(() => {
     if (provider !== "scrap") return
@@ -59,11 +62,32 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     setScrapRepoId(null)
     setScrapRepos(null)
     setError(null)
+    setScrapMode("select")
+    setRequestUrl("")
+    setRequestSuccess(false)
     onClose()
   }
 
   async function handleSubmit() {
     setError(null)
+
+    if (provider === "scrap" && scrapMode === "request") {
+      if (!requestUrl.trim()) { setError(t.addFlux.requiredError); return }
+      try { new URL(requestUrl) } catch { setError(t.addFlux.requestUrlError); return }
+      setSubmitting(true)
+      try {
+        const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
+        if (!token) throw new Error("Token manquant")
+        await createScrapRequest({ url: requestUrl }, token, apiUrl)
+        setRequestSuccess(true)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t.common.error)
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
     if (provider === "scrap") {
       if (!scrapRepoId) { setError(t.addFlux.selectError); return }
     } else {
@@ -123,6 +147,17 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
           </View>
 
           <View className="gap-4">
+            {requestSuccess ? (
+              <View className="gap-2 py-2">
+                <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {t.addFlux.requestSent}
+                </Text>
+                <Text className="text-sm text-gray-500 dark:text-gray-400">
+                  {t.addFlux.requestSentDescription}
+                </Text>
+              </View>
+            ) : (
+            <>
             {/* Provider selector */}
             <View className="gap-1.5">
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -161,30 +196,73 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
             {/* Identifier / scrap selector */}
             {provider === "scrap" ? (
-              <View className="gap-1.5">
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t.addFlux.scrapRepo}
-                </Text>
-                {scrapLoading ? (
-                  <ActivityIndicator size="small" />
-                ) : availableScrapRepos.length === 0 ? (
-                  <Text className="text-sm text-gray-400">{t.addFlux.noScrapRepos}</Text>
+              <View className="gap-3">
+                {/* Mode toggle */}
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => setScrapMode("select")}
+                    className={`rounded-full px-3 py-1.5 ${
+                      scrapMode === "select" ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
+                    }`}
+                  >
+                    <Text className={`text-xs font-medium ${scrapMode === "select" ? "text-white" : "text-gray-700 dark:text-gray-300"}`}>
+                      {t.addFlux.chooseExisting}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setScrapMode("request")}
+                    className={`rounded-full px-3 py-1.5 ${
+                      scrapMode === "request" ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
+                    }`}
+                  >
+                    <Text className={`text-xs font-medium ${scrapMode === "request" ? "text-white" : "text-gray-700 dark:text-gray-300"}`}>
+                      {t.addFlux.makeRequest}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {scrapMode === "select" ? (
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t.addFlux.scrapRepo}
+                    </Text>
+                    {scrapLoading ? (
+                      <ActivityIndicator size="small" />
+                    ) : availableScrapRepos.length === 0 ? (
+                      <Text className="text-sm text-gray-400">{t.addFlux.noScrapRepos}</Text>
+                    ) : (
+                      availableScrapRepos.map((r) => (
+                        <Pressable
+                          key={r.id}
+                          onPress={() => setScrapRepoId(r.id)}
+                          className={`rounded-lg border p-3 ${
+                            scrapRepoId === r.id
+                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                              : "border-gray-200 dark:border-gray-700"
+                          }`}
+                        >
+                          <Text className="text-sm text-gray-800 dark:text-gray-200" numberOfLines={1}>
+                            {r.url}
+                          </Text>
+                        </Pressable>
+                      ))
+                    )}
+                  </View>
                 ) : (
-                  availableScrapRepos.map((r) => (
-                    <Pressable
-                      key={r.id}
-                      onPress={() => setScrapRepoId(r.id)}
-                      className={`rounded-lg border p-3 ${
-                        scrapRepoId === r.id
-                          ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                          : "border-gray-200 dark:border-gray-700"
-                      }`}
-                    >
-                      <Text className="text-sm text-gray-800 dark:text-gray-200" numberOfLines={1}>
-                        {r.url}
-                      </Text>
-                    </Pressable>
-                  ))
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t.addFlux.requestUrl}
+                    </Text>
+                    <TextInput
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                      value={requestUrl}
+                      onChangeText={setRequestUrl}
+                      placeholder={t.addFlux.requestUrlPlaceholder}
+                      placeholderTextColor="#9ca3af"
+                      autoCapitalize="none"
+                      keyboardType="url"
+                    />
+                  </View>
                 )}
               </View>
             ) : (
@@ -226,6 +304,17 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                 )}
               </Pressable>
             </View>
+            </>
+            )}
+
+            {requestSuccess && (
+              <Pressable
+                onPress={handleClose}
+                className="items-center rounded-lg border border-gray-300 py-3 dark:border-gray-700"
+              >
+                <Text className="font-medium text-gray-700 dark:text-gray-300">{t.addFlux.cancel}</Text>
+              </Pressable>
+            )}
           </View>
         </Pressable>
       </Pressable>

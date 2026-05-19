@@ -101,6 +101,15 @@ export interface ScrapRepository {
   is_subscribed: boolean
 }
 
+export interface ScrapRequest {
+  id: string
+  user_id: string
+  user_email: string
+  url: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
+
 export interface DocRegistry {
   id: number
   name: string
