@@ -48,6 +48,7 @@ interface UnifiedFeedListProps {
   loading?: boolean
   onRefresh?: () => void
   onPressItem?: (tagged: TaggedItem) => void
+  readIds?: Set<string>
 }
 
 export function UnifiedFeedList({
@@ -59,6 +60,7 @@ export function UnifiedFeedList({
   loading,
   onRefresh,
   onPressItem,
+  readIds,
 }: UnifiedFeedListProps) {
   const { t } = useLanguage()
   const repoUrlMap = Object.fromEntries(repositories.map((r) => [r.repository_id, r.url]))
@@ -84,8 +86,12 @@ export function UnifiedFeedList({
       keyExtractor={(_, i) => String(i)}
       renderItem={({ item: tagged }) => {
         const onPress = onPressItem ? () => onPressItem(tagged) : undefined
+        const isRead = readIds?.has(`${tagged.provider}:${tagged.item.id}`) ?? false
         return (
-          <View className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+          <View
+            className="border-b border-gray-100 px-4 py-3 dark:border-gray-800"
+            style={{ opacity: isRead ? 0.45 : 1 }}
+          >
             {tagged.provider === "changelog" && (
               <ChangelogEntry
                 item={tagged.item}
@@ -94,8 +100,12 @@ export function UnifiedFeedList({
                 repositoryLabel={t.viewer.repository}
               />
             )}
-            {tagged.provider === "youtube" && <YoutubeEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />}
-            {tagged.provider === "rss" && <RssEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />}
+            {tagged.provider === "youtube" && (
+              <YoutubeEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />
+            )}
+            {tagged.provider === "rss" && (
+              <RssEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />
+            )}
             {tagged.provider === "scrap" && <ScrapEntry item={tagged.item} onPress={onPress} />}
           </View>
         )
@@ -157,7 +167,15 @@ function ChangelogEntry({
   )
 }
 
-function YoutubeEntry({ item, onPress, noTitle }: { item: YoutubeItem; onPress?: () => void; noTitle: string }) {
+function YoutubeEntry({
+  item,
+  onPress,
+  noTitle,
+}: {
+  item: YoutubeItem
+  onPress?: () => void
+  noTitle: string
+}) {
   let parsed: YoutubeItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as YoutubeItemContent
@@ -207,7 +225,15 @@ function YoutubeEntry({ item, onPress, noTitle }: { item: YoutubeItem; onPress?:
   )
 }
 
-function RssEntry({ item, onPress, noTitle }: { item: RssItem; onPress?: () => void; noTitle: string }) {
+function RssEntry({
+  item,
+  onPress,
+  noTitle,
+}: {
+  item: RssItem
+  onPress?: () => void
+  noTitle: string
+}) {
   let parsed: RssItemContent | null = null
   try {
     parsed = JSON.parse(item.content) as RssItemContent

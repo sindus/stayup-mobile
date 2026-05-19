@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { View, Text, Pressable } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
@@ -10,6 +10,7 @@ import { FeedFluxList } from "@/components/feed/FeedFluxList"
 import { AddFluxSheet } from "@/components/feed/AddFluxSheet"
 import { LoadingScreen } from "@/components/ui/LoadingScreen"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
+import { useReadItemsStore, getTaggedItemId } from "@/store/readItems"
 import type { Provider, TaggedItem } from "@/types"
 
 export default function FeedScreen() {
@@ -21,6 +22,24 @@ export default function FeedScreen() {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
   const [addVisible, setAddVisible] = useState(false)
   const setItem = useSelectedFeedItemStore((s) => s.setItem)
+  const { readIds, initialized, init, markRead, cleanup } = useReadItemsStore()
+
+  useEffect(() => {
+    void init()
+  }, [init])
+
+  useEffect(() => {
+    if (!connectors || !initialized) return
+    const allIds = new Set<string>([
+      ...(connectors.changelog ?? []).map((item) =>
+        getTaggedItemId({ provider: "changelog", item }),
+      ),
+      ...(connectors.youtube ?? []).map((item) => getTaggedItemId({ provider: "youtube", item })),
+      ...(connectors.rss ?? []).map((item) => getTaggedItemId({ provider: "rss", item })),
+      ...(connectors.scrap ?? []).map((item) => getTaggedItemId({ provider: "scrap", item })),
+    ])
+    void cleanup(allIds)
+  }, [connectors, initialized, cleanup])
 
   function handlePressItem(tagged: TaggedItem) {
     const repoUrl =
@@ -31,6 +50,7 @@ export default function FeedScreen() {
             ) as { url: string } | undefined
           )?.url ?? "")
         : ""
+    void markRead(tagged)
     setItem(tagged, repoUrl)
     router.push("/feed/detail")
   }
@@ -81,6 +101,7 @@ export default function FeedScreen() {
         loading={loading}
         onRefresh={refresh}
         onPressItem={handlePressItem}
+        readIds={readIds}
       />
 
       <AddFluxSheet
