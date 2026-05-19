@@ -12,6 +12,7 @@ const PROVIDER_COLORS: Record<Provider, string> = {
   youtube: "#f43f5e",
   rss: "#f59e0b",
   scrap: "#22c55e",
+  documentation: "#6366f1",
 }
 
 interface FeedFluxListProps {
@@ -48,7 +49,9 @@ export function FeedFluxList({
             if (!token) return
             await deleteUserRepository(userId, flux.id, token, apiUrl)
             onDeleted()
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         },
       },
     ])
@@ -71,7 +74,10 @@ export function FeedFluxList({
               className="rounded-full px-2 py-0.5"
               style={{ backgroundColor: PROVIDER_COLORS[selectedProvider] + "22" }}
             >
-              <Text className="text-xs font-medium" style={{ color: PROVIDER_COLORS[selectedProvider] }}>
+              <Text
+                className="text-xs font-medium"
+                style={{ color: PROVIDER_COLORS[selectedProvider] }}
+              >
                 {t.feed.providers[selectedProvider]}
               </Text>
             </View>
@@ -81,16 +87,20 @@ export function FeedFluxList({
         <View className="flex-row items-center gap-2">
           {/* Bouton + toujours accessible */}
           <Pressable
-            onPress={(e) => { e.stopPropagation(); onAddPress() }}
+            onPress={(e) => {
+              e.stopPropagation()
+              onAddPress()
+            }}
             className="rounded-full p-1"
             hitSlop={8}
           >
             <Plus size={16} color="#6366f1" />
           </Pressable>
-          {expanded
-            ? <ChevronUp size={16} color="#9ca3af" />
-            : <ChevronDown size={16} color="#9ca3af" />
-          }
+          {expanded ? (
+            <ChevronUp size={16} color="#9ca3af" />
+          ) : (
+            <ChevronDown size={16} color="#9ca3af" />
+          )}
         </View>
       </Pressable>
 
