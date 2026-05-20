@@ -5,6 +5,7 @@ import type { FeedFlux } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
 import { readToken, readApiUrl } from "@/lib/store"
+import { stripUrlScheme } from "@/lib/utils"
 import type { Provider } from "@/types"
 
 const PROVIDER_COLORS: Record<Provider, string> = {
@@ -188,7 +189,7 @@ export function FeedFluxList({
                         className="max-w-[140px] text-sm text-gray-700 dark:text-gray-300"
                         numberOfLines={1}
                       >
-                        {flux.identifier}
+                        {stripUrlScheme(flux.identifier)}
                       </Text>
                       {fluxUnread > 0 && (
                         <View className="rounded-full bg-teal-500 px-1 py-0.5">
