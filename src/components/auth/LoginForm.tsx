@@ -18,7 +18,11 @@ export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
     email: z.string().email(t.auth.emailInvalid),
     password: z.string().min(1, t.auth.passwordRequired),
   })
-  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -45,13 +49,13 @@ export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
             />
           )}
         />
-        {errors.email && (
-          <Text className="text-xs text-red-500">{errors.email.message}</Text>
-        )}
+        {errors.email && <Text className="text-xs text-red-500">{errors.email.message}</Text>}
       </View>
 
       <View className="gap-1.5">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.auth.password}</Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t.auth.password}
+        </Text>
         <Controller
           control={control}
           name="password"
@@ -68,9 +72,7 @@ export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
             />
           )}
         />
-        {errors.password && (
-          <Text className="text-xs text-red-500">{errors.password.message}</Text>
-        )}
+        {errors.password && <Text className="text-xs text-red-500">{errors.password.message}</Text>}
       </View>
 
       {error && (

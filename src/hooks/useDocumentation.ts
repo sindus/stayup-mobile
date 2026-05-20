@@ -186,7 +186,14 @@ export function useDocDiff(docId: number, versionId: number): UseDocDiffState {
 
   useEffect(() => {
     let cancelled = false
-    setState({ docName: "", version: null, diff: null, scraped_at: null, loading: true, error: null })
+    setState({
+      docName: "",
+      version: null,
+      diff: null,
+      scraped_at: null,
+      loading: true,
+      error: null,
+    })
 
     async function load() {
       try {

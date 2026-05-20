@@ -19,7 +19,11 @@ export function RegisterForm({ onSubmit, loading, error }: RegisterFormProps) {
     email: z.string().email(t.auth.emailInvalid),
     password: z.string().min(8, t.auth.passwordTooShort),
   })
-  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -70,7 +74,9 @@ export function RegisterForm({ onSubmit, loading, error }: RegisterFormProps) {
       </View>
 
       <View className="gap-1.5">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.auth.password}</Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t.auth.password}
+        </Text>
         <Controller
           control={control}
           name="password"

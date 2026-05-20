@@ -45,7 +45,9 @@ export function DocViewer({ docId }: DocViewerProps) {
           </Pressable>
         </View>
         {doc && (
-          <Text className="mt-0.5 text-xs text-gray-400" numberOfLines={1}>{doc.url}</Text>
+          <Text className="mt-0.5 text-xs text-gray-400" numberOfLines={1}>
+            {doc.url}
+          </Text>
         )}
       </View>
 

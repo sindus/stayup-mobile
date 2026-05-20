@@ -17,9 +17,7 @@ export function LanguageSwitcher() {
           key={code}
           onPress={() => setLang(code)}
           className={`rounded-md px-3 py-1.5 ${
-            lang === code
-              ? "bg-indigo-500"
-              : "bg-gray-100 dark:bg-gray-800"
+            lang === code ? "bg-indigo-500" : "bg-gray-100 dark:bg-gray-800"
           }`}
         >
           <Text

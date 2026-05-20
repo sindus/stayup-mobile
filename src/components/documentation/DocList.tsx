@@ -41,7 +41,9 @@ export function DocList() {
       renderItem={({ item: doc }) => (
         <View className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
           <Text className="text-sm font-medium text-gray-900 dark:text-white">{doc.name}</Text>
-          <Text className="mt-0.5 text-xs text-gray-400" numberOfLines={1}>{doc.url}</Text>
+          <Text className="mt-0.5 text-xs text-gray-400" numberOfLines={1}>
+            {doc.url}
+          </Text>
           {doc.current_version !== null && (
             <Text className="mt-0.5 text-xs text-gray-400">
               {t.documentation.version} {doc.current_version}
