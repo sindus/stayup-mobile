@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { View, Text, Pressable } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
@@ -13,6 +13,8 @@ import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { useReadItemsStore, getTaggedItemId } from "@/store/readItems"
 import type { Provider, TaggedItem } from "@/types"
 
+type FilterMode = "all" | "unread"
+
 export default function FeedScreen() {
   const router = useRouter()
   const { session } = useAuth()
@@ -20,9 +22,10 @@ export default function FeedScreen() {
   const userId = session?.userId ?? ""
   const { fluxes, connectors, loading, error, refresh } = useFeed(userId)
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+  const [filterMode, setFilterMode] = useState<FilterMode>("all")
   const [addVisible, setAddVisible] = useState(false)
   const setItem = useSelectedFeedItemStore((s) => s.setItem)
-  const { readIds, initialized, init, markRead, cleanup } = useReadItemsStore()
+  const { readIds, initialized, init, markRead, markAllRead, cleanup } = useReadItemsStore()
 
   useEffect(() => {
     void init()
@@ -40,6 +43,35 @@ export default function FeedScreen() {
     ])
     void cleanup(allIds)
   }, [connectors, initialized, cleanup])
+
+  const c = connectors ?? { changelog: [], youtube: [], rss: [], scrap: [] }
+
+  const allTaggedItems = useMemo<TaggedItem[]>(
+    () => [
+      ...(c.changelog ?? []).map((item) => ({ provider: "changelog" as const, item })),
+      ...(c.youtube ?? []).map((item) => ({ provider: "youtube" as const, item })),
+      ...(c.rss ?? []).map((item) => ({ provider: "rss" as const, item })),
+      ...(c.scrap ?? []).map((item) => ({ provider: "scrap" as const, item })),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [connectors],
+  )
+
+  const unreadCountByRepoId = useMemo<Record<number, number>>(() => {
+    const counts: Record<number, number> = {}
+    for (const tagged of allTaggedItems) {
+      if (!readIds.has(getTaggedItemId(tagged))) {
+        const rid = tagged.item.repository_id
+        counts[rid] = (counts[rid] ?? 0) + 1
+      }
+    }
+    return counts
+  }, [allTaggedItems, readIds])
+
+  const unreadCount = useMemo(
+    () => allTaggedItems.filter((t) => !readIds.has(getTaggedItemId(t))).length,
+    [allTaggedItems, readIds],
+  )
 
   function handlePressItem(tagged: TaggedItem) {
     const repoUrl =
@@ -70,9 +102,7 @@ export default function FeedScreen() {
     )
   }
 
-  const c = connectors ?? { changelog: [], youtube: [], rss: [], scrap: [] }
-
-  const filtered = selectedProvider
+  const providerFiltered = selectedProvider
     ? {
         changelog: selectedProvider === "changelog" ? c.changelog : [],
         youtube: selectedProvider === "youtube" ? c.youtube : [],
@@ -80,6 +110,22 @@ export default function FeedScreen() {
         scrap: selectedProvider === "scrap" ? c.scrap : [],
       }
     : c
+
+  const filtered =
+    filterMode === "unread"
+      ? {
+          changelog: (providerFiltered.changelog ?? []).filter(
+            (item) => !readIds.has(`changelog:${item.id}`),
+          ),
+          youtube: (providerFiltered.youtube ?? []).filter(
+            (item) => !readIds.has(`youtube:${item.id}`),
+          ),
+          rss: (providerFiltered.rss ?? []).filter((item) => !readIds.has(`rss:${item.id}`)),
+          scrap: (providerFiltered.scrap ?? []).filter((item) => !readIds.has(`scrap:${item.id}`)),
+        }
+      : providerFiltered
+
+  const totalItems = Object.values(providerFiltered).flat().length
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={["top"]}>
@@ -90,7 +136,66 @@ export default function FeedScreen() {
         onSelectProvider={setSelectedProvider}
         onAddPress={() => setAddVisible(true)}
         onDeleted={refresh}
+        unreadCountByRepoId={unreadCountByRepoId}
       />
+
+      {/* Filter bar */}
+      <View className="flex-row items-center gap-1 border-b border-gray-100 px-3 py-1.5 dark:border-gray-800">
+        <Pressable
+          onPress={() => setFilterMode("all")}
+          className={`flex-row items-center gap-1.5 rounded px-2.5 py-1 ${
+            filterMode === "all" ? "bg-gray-100 dark:bg-gray-800" : ""
+          }`}
+        >
+          <Text
+            className={`text-base ${
+              filterMode === "all"
+                ? "font-medium text-gray-900 dark:text-gray-100"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            {t.feed.filterAll}
+          </Text>
+          <View className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">
+            <Text className="text-xs font-mono text-gray-500 dark:text-gray-400">{totalItems}</Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setFilterMode("unread")}
+          className={`flex-row items-center gap-1.5 rounded px-2.5 py-1 ${
+            filterMode === "unread" ? "bg-gray-100 dark:bg-gray-800" : ""
+          }`}
+        >
+          <Text
+            className={`text-base ${
+              filterMode === "unread"
+                ? "font-medium text-gray-900 dark:text-gray-100"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            {t.feed.filterUnread}
+          </Text>
+          {unreadCount > 0 && (
+            <View className="rounded bg-teal-100 px-1.5 py-0.5 dark:bg-teal-900/40">
+              <Text className="text-xs font-mono font-semibold text-teal-700 dark:text-teal-400">
+                {unreadCount}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+
+        <View className="flex-1" />
+
+        {unreadCount > 0 && (
+          <Pressable
+            onPress={() => void markAllRead(allTaggedItems)}
+            className="rounded px-2.5 py-1"
+          >
+            <Text className="text-sm text-gray-500 dark:text-gray-400">{t.feed.markAllRead}</Text>
+          </Pressable>
+        )}
+      </View>
 
       <UnifiedFeedList
         changelog={filtered.changelog ?? []}

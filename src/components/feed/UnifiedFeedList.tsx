@@ -75,7 +75,7 @@ export function UnifiedFeedList({
   if (all.length === 0 && !loading) {
     return (
       <View className="flex-1 items-center justify-center py-16">
-        <Text className="text-sm italic text-gray-400">{t.feed.noContent}</Text>
+        <Text className="text-base italic text-gray-400">{t.feed.noContent}</Text>
       </View>
     )
   }
@@ -138,23 +138,23 @@ function ChangelogEntry({
     >
       <View className="mb-1 flex-row items-center gap-2">
         <Text
-          className="flex-1 text-xs font-mono text-gray-500 dark:text-gray-400"
+          className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400"
           numberOfLines={1}
         >
           {repoName}
         </Text>
         <View className="rounded bg-teal-50 px-1.5 py-0.5 dark:bg-teal-900/30">
-          <Text className="text-xs font-mono font-semibold text-teal-700 dark:text-teal-400">
+          <Text className="text-sm font-mono font-semibold text-teal-700 dark:text-teal-400">
             {item.version}
           </Text>
         </View>
-        <Text className="text-xs font-mono text-gray-400 dark:text-gray-500">
+        <Text className="text-sm font-mono text-gray-400 dark:text-gray-500">
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
       {item.content && (
         <Text
-          className="text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+          className="text-base leading-relaxed text-gray-600 dark:text-gray-400"
           numberOfLines={2}
         >
           {item.content
@@ -199,24 +199,24 @@ function YoutubeEntry({
           />
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-xs text-gray-400">▶</Text>
+            <Text className="text-sm text-gray-400">▶</Text>
           </View>
         )}
       </View>
       <View className="flex-1">
         <Text
-          className="text-sm font-medium leading-snug text-gray-900 dark:text-gray-100"
+          className="text-base font-medium leading-snug text-gray-900 dark:text-gray-100"
           numberOfLines={2}
         >
           {parsed?.title ?? noTitle}
         </Text>
         <View className="mt-1 flex-row items-center gap-2">
           {parsed?.url && (
-            <Text className="text-xs font-mono text-rose-400">
+            <Text className="text-sm font-mono text-rose-400">
               {extractChannelName(parsed.url)}
             </Text>
           )}
-          <Text className="text-xs font-mono text-gray-500">
+          <Text className="text-sm font-mono text-gray-500">
             {formatDate(item.datetime ?? item.executed_at)}
           </Text>
         </View>
@@ -250,18 +250,18 @@ function RssEntry({
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
         <Text
-          className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100"
+          className="flex-1 text-base font-medium text-gray-900 dark:text-gray-100"
           numberOfLines={1}
         >
           {parsed?.title ?? noTitle}
         </Text>
-        <Text className="text-xs font-mono text-gray-500">
+        <Text className="text-sm font-mono text-gray-500">
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
-      {source && <Text className="mb-1 text-xs font-mono text-amber-400">{source}</Text>}
+      {source && <Text className="mb-1 text-sm font-mono text-amber-400">{source}</Text>}
       {parsed?.summary && (
-        <Text className="text-sm leading-relaxed text-gray-400" numberOfLines={2}>
+        <Text className="text-base leading-relaxed text-gray-400" numberOfLines={2}>
           {parsed.summary}
         </Text>
       )}
@@ -288,15 +288,15 @@ function ScrapEntry({ item, onPress }: { item: ScrapItem; onPress?: () => void }
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
         {params?.url && (
-          <Text className="flex-1 text-xs font-mono text-green-400" numberOfLines={1}>
+          <Text className="flex-1 text-sm font-mono text-green-400" numberOfLines={1}>
             {params.url}
           </Text>
         )}
-        <Text className="text-xs font-mono text-gray-500">{formatDate(item.executed_at)}</Text>
+        <Text className="text-sm font-mono text-gray-500">{formatDate(item.executed_at)}</Text>
       </View>
       {item.content && (
         <Text
-          className="text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+          className="text-base leading-relaxed text-gray-600 dark:text-gray-400"
           numberOfLines={2}
         >
           {item.content.slice(0, 200)}

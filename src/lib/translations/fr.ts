@@ -30,6 +30,9 @@ export const fr = {
     loading: "Chargement…",
     retry: "Réessayer",
     noContent: "Aucun contenu disponible.",
+    filterAll: "Tous",
+    filterUnread: "Non lu",
+    markAllRead: "Tout marquer lu",
     providers: {
       changelog: "GitHub Changelog",
       youtube: "YouTube",

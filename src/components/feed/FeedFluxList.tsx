@@ -22,6 +22,7 @@ interface FeedFluxListProps {
   onSelectProvider: (p: Provider | null) => void
   onAddPress: () => void
   onDeleted: () => void
+  unreadCountByRepoId?: Record<number, number>
 }
 
 export function FeedFluxList({
@@ -31,6 +32,7 @@ export function FeedFluxList({
   onSelectProvider,
   onAddPress,
   onDeleted,
+  unreadCountByRepoId = {},
 }: FeedFluxListProps) {
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(true)
@@ -65,7 +67,7 @@ export function FeedFluxList({
         className="flex-row items-center justify-between px-4 py-2.5"
       >
         <View className="flex-row items-center gap-2">
-          <Text className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
             {t.feed.myFeeds}
           </Text>
           {/* Badge du filtre actif quand replié */}
@@ -75,7 +77,7 @@ export function FeedFluxList({
               style={{ backgroundColor: PROVIDER_COLORS[selectedProvider] + "22" }}
             >
               <Text
-                className="text-xs font-medium"
+                className="text-sm font-medium"
                 style={{ color: PROVIDER_COLORS[selectedProvider] }}
               >
                 {t.feed.providers[selectedProvider]}
@@ -129,8 +131,12 @@ export function FeedFluxList({
             </Pressable>
 
             {providers.map((p) => {
-              const count = fluxes.filter((f) => f.provider === p).length
-              if (count === 0) return null
+              const providerFluxes = fluxes.filter((f) => f.provider === p)
+              if (providerFluxes.length === 0) return null
+              const providerUnread = providerFluxes.reduce(
+                (sum, f) => sum + (unreadCountByRepoId[f.repository_id] ?? 0),
+                0,
+              )
               return (
                 <Pressable
                   key={p}
@@ -144,12 +150,19 @@ export function FeedFluxList({
                     style={{ backgroundColor: PROVIDER_COLORS[p] }}
                   />
                   <Text
-                    className={`text-sm font-medium ${
+                    className={`text-base font-medium ${
                       selectedProvider === p ? "text-white" : "text-gray-700 dark:text-gray-300"
                     }`}
                   >
                     {t.feed.providers[p]}
                   </Text>
+                  {providerUnread > 0 && (
+                    <View className="rounded-full bg-teal-500 px-1.5 py-0.5">
+                      <Text className="text-xs font-mono font-semibold text-white">
+                        {providerUnread}
+                      </Text>
+                    </View>
+                  )}
                 </Pressable>
               )
             })}
@@ -164,22 +177,32 @@ export function FeedFluxList({
             >
               {fluxes
                 .filter((f) => f.provider === selectedProvider)
-                .map((flux) => (
-                  <View
-                    key={flux.id}
-                    className="flex-row items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-800"
-                  >
-                    <Text
-                      className="max-w-[140px] text-xs text-gray-700 dark:text-gray-300"
-                      numberOfLines={1}
+                .map((flux) => {
+                  const fluxUnread = unreadCountByRepoId[flux.repository_id] ?? 0
+                  return (
+                    <View
+                      key={flux.id}
+                      className="flex-row items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-800"
                     >
-                      {flux.identifier}
-                    </Text>
-                    <Pressable onPress={() => handleDelete(flux)} className="ml-1 p-0.5">
-                      <Trash2 size={12} color="#9ca3af" />
-                    </Pressable>
-                  </View>
-                ))}
+                      <Text
+                        className="max-w-[140px] text-sm text-gray-700 dark:text-gray-300"
+                        numberOfLines={1}
+                      >
+                        {flux.identifier}
+                      </Text>
+                      {fluxUnread > 0 && (
+                        <View className="rounded-full bg-teal-500 px-1 py-0.5">
+                          <Text className="text-xs font-mono font-semibold text-white">
+                            {fluxUnread}
+                          </Text>
+                        </View>
+                      )}
+                      <Pressable onPress={() => handleDelete(flux)} className="ml-1 p-0.5">
+                        <Trash2 size={12} color="#9ca3af" />
+                      </Pressable>
+                    </View>
+                  )
+                })}
             </ScrollView>
           )}
         </>

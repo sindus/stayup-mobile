@@ -32,6 +32,9 @@ export const en: Translations = {
     loading: "Loading…",
     retry: "Retry",
     noContent: "No content available.",
+    filterAll: "All",
+    filterUnread: "Unread",
+    markAllRead: "Mark all read",
     providers: {
       changelog: "GitHub Changelog",
       youtube: "YouTube",
