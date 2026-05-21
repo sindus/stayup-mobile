@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { View, Text, Pressable } from "react-native"
+import { CheckCheck } from "lucide-react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { useAuth } from "@/hooks/useAuth"
@@ -200,9 +201,10 @@ export default function FeedScreen() {
         {unreadCount > 0 && (
           <Pressable
             onPress={() => void markAllRead(allTaggedItems)}
-            className="rounded px-2.5 py-1"
+            accessibilityLabel={t.feed.markAllRead}
+            className="rounded p-1.5"
           >
-            <Text className="text-sm text-gray-500 dark:text-gray-400">{t.feed.markAllRead}</Text>
+            <CheckCheck size={18} color="#6b7280" />
           </Pressable>
         )}
       </View>
