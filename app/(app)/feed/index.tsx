@@ -25,7 +25,7 @@ export default function FeedScreen() {
   const [filterMode, setFilterMode] = useState<FilterMode>("all")
   const [addVisible, setAddVisible] = useState(false)
   const setItem = useSelectedFeedItemStore((s) => s.setItem)
-  const { readIds, initialized, init, markRead, markAllRead, cleanup } = useReadItemsStore()
+  const { readIds, initialized, init, markAllRead, cleanup } = useReadItemsStore()
 
   useEffect(() => {
     void init()
@@ -82,7 +82,6 @@ export default function FeedScreen() {
             ) as { url: string } | undefined
           )?.url ?? "")
         : ""
-    void markRead(tagged)
     setItem(tagged, repoUrl)
     router.push("/feed/detail")
   }

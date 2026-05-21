@@ -6,6 +6,7 @@ import { Image } from "expo-image"
 import { ChevronLeft } from "lucide-react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
+import { useReadItemsStore } from "@/store/readItems"
 import { useLanguage } from "@/context/LanguageContext"
 import { formatDate, openUrl } from "@/lib/utils"
 import type { TaggedItem, YoutubeItemContent, RssItemContent, ScrapItemParams } from "@/types"
@@ -72,7 +73,12 @@ export default function FeedDetailScreen() {
   const router = useRouter()
   const { t } = useLanguage()
   const { item: tagged, repoUrl } = useSelectedFeedItemStore()
+  const { markRead } = useReadItemsStore()
   const [fontSizeOffset, setFontSizeOffset] = useState(0)
+
+  useEffect(() => {
+    if (tagged) void markRead(tagged)
+  }, [tagged, markRead])
 
   useEffect(() => {
     void AsyncStorage.getItem(LS_FONT_KEY).then((v) => {
