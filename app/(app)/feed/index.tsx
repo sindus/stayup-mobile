@@ -22,10 +22,17 @@ export default function FeedScreen() {
   const userId = session?.userId ?? ""
   const { fluxes, connectors, loading, error, refresh } = useFeed(userId)
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
-  const [filterMode, setFilterMode] = useState<FilterMode>("all")
+  const [filterState, setFilterState] = useState<{ providerId: Provider | null; mode: FilterMode }>(
+    {
+      providerId: null,
+      mode: "all",
+    },
+  )
+  const filterMode = filterState.providerId === selectedProvider ? filterState.mode : "all"
   const [addVisible, setAddVisible] = useState(false)
-  const setItem = useSelectedFeedItemStore((s) => s.setItem)
+  const { item: openItem, setItem } = useSelectedFeedItemStore()
   const { readIds, initialized, init, markAllRead, cleanup } = useReadItemsStore()
+  const openItemId = openItem ? getTaggedItemId(openItem) : null
 
   useEffect(() => {
     void init()
@@ -114,13 +121,17 @@ export default function FeedScreen() {
     filterMode === "unread"
       ? {
           changelog: (providerFiltered.changelog ?? []).filter(
-            (item) => !readIds.has(`changelog:${item.id}`),
+            (item) => !readIds.has(`changelog:${item.id}`) || `changelog:${item.id}` === openItemId,
           ),
           youtube: (providerFiltered.youtube ?? []).filter(
-            (item) => !readIds.has(`youtube:${item.id}`),
+            (item) => !readIds.has(`youtube:${item.id}`) || `youtube:${item.id}` === openItemId,
           ),
-          rss: (providerFiltered.rss ?? []).filter((item) => !readIds.has(`rss:${item.id}`)),
-          scrap: (providerFiltered.scrap ?? []).filter((item) => !readIds.has(`scrap:${item.id}`)),
+          rss: (providerFiltered.rss ?? []).filter(
+            (item) => !readIds.has(`rss:${item.id}`) || `rss:${item.id}` === openItemId,
+          ),
+          scrap: (providerFiltered.scrap ?? []).filter(
+            (item) => !readIds.has(`scrap:${item.id}`) || `scrap:${item.id}` === openItemId,
+          ),
         }
       : providerFiltered
 
@@ -141,7 +152,7 @@ export default function FeedScreen() {
       {/* Filter bar */}
       <View className="flex-row items-center gap-1 border-b border-gray-100 px-3 py-1.5 dark:border-gray-800">
         <Pressable
-          onPress={() => setFilterMode("all")}
+          onPress={() => setFilterState({ providerId: selectedProvider, mode: "all" })}
           className={`flex-row items-center gap-1.5 rounded px-2.5 py-1 ${
             filterMode === "all" ? "bg-gray-100 dark:bg-gray-800" : ""
           }`}
@@ -161,7 +172,7 @@ export default function FeedScreen() {
         </Pressable>
 
         <Pressable
-          onPress={() => setFilterMode("unread")}
+          onPress={() => setFilterState({ providerId: selectedProvider, mode: "unread" })}
           className={`flex-row items-center gap-1.5 rounded px-2.5 py-1 ${
             filterMode === "unread" ? "bg-gray-100 dark:bg-gray-800" : ""
           }`}
@@ -206,6 +217,7 @@ export default function FeedScreen() {
         onRefresh={refresh}
         onPressItem={handlePressItem}
         readIds={readIds}
+        openItemId={openItemId ?? undefined}
       />
 
       <AddFluxSheet

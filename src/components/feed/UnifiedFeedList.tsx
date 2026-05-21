@@ -49,6 +49,7 @@ interface UnifiedFeedListProps {
   onRefresh?: () => void
   onPressItem?: (tagged: TaggedItem) => void
   readIds?: Set<string>
+  openItemId?: string
 }
 
 export function UnifiedFeedList({
@@ -61,6 +62,7 @@ export function UnifiedFeedList({
   onRefresh,
   onPressItem,
   readIds,
+  openItemId,
 }: UnifiedFeedListProps) {
   const { t } = useLanguage()
   const repoUrlMap = Object.fromEntries(repositories.map((r) => [r.repository_id, r.url]))
@@ -86,11 +88,13 @@ export function UnifiedFeedList({
       keyExtractor={(_, i) => String(i)}
       renderItem={({ item: tagged }) => {
         const onPress = onPressItem ? () => onPressItem(tagged) : undefined
-        const isRead = readIds?.has(`${tagged.provider}:${tagged.item.id}`) ?? false
+        const id = `${tagged.provider}:${tagged.item.id}`
+        const isRead = readIds?.has(id) ?? false
+        const isOpen = id === openItemId
         return (
           <View
             className="border-b border-gray-100 px-4 py-3 dark:border-gray-800"
-            style={{ opacity: isRead ? 0.45 : 1 }}
+            style={{ opacity: isRead && !isOpen ? 0.45 : 1 }}
           >
             {tagged.provider === "changelog" && (
               <ChangelogEntry
