@@ -52,6 +52,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen name="feed/flux/[id]" options={{ href: null }} />
+      <Tabs.Screen name="feed/article" options={{ href: null }} />
       <Tabs.Screen name="documentation/[id]" options={{ href: null }} />
       <Tabs.Screen name="documentation/[id]/history" options={{ href: null }} />
       <Tabs.Screen name="documentation/[id]/diff/[versionId]" options={{ href: null }} />

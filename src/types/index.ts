@@ -72,6 +72,12 @@ export interface ScrapItem {
   success: boolean
 }
 
+export type TaggedItem =
+  | { provider: "changelog"; item: ChangelogItem }
+  | { provider: "youtube"; item: YoutubeItem }
+  | { provider: "rss"; item: RssItem }
+  | { provider: "scrap"; item: ScrapItem }
+
 export type ConnectorItem = ChangelogItem | YoutubeItem | RssItem | ScrapItem
 
 export interface ConnectorData {
