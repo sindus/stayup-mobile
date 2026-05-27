@@ -34,9 +34,7 @@ describe("loginWithPassword", () => {
 
   it("throws on 500", async () => {
     mockFetch(500, {})
-    await expect(loginWithPassword("a@b.com", "pass", API_URL)).rejects.toThrow(
-      "Erreur serveur",
-    )
+    await expect(loginWithPassword("a@b.com", "pass", API_URL)).rejects.toThrow("Erreur serveur")
   })
 })
 

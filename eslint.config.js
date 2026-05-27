@@ -1,7 +1,7 @@
-const tsPlugin = require("@typescript-eslint/eslint-plugin");
-const tsParser = require("@typescript-eslint/parser");
-const reactPlugin = require("eslint-plugin-react");
-const reactHooksPlugin = require("eslint-plugin-react-hooks");
+const tsPlugin = require("@typescript-eslint/eslint-plugin")
+const tsParser = require("@typescript-eslint/parser")
+const reactPlugin = require("eslint-plugin-react")
+const reactHooksPlugin = require("eslint-plugin-react-hooks")
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
 module.exports = [
@@ -59,4 +59,4 @@ module.exports = [
       "@typescript-eslint/no-require-imports": "off",
     },
   },
-];
+]

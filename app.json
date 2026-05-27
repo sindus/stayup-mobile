@@ -2,7 +2,7 @@
   "expo": {
     "name": "StayUp",
     "slug": "stayup-mobile",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "scheme": "stayup",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,11 +29,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-web-browser"
-    ],
+    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser"],
     "experiments": {
       "typedRoutes": true
     }

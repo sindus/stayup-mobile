@@ -1,8 +1,6 @@
 import { create } from "zustand"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import { readReadItems, writeReadItems } from "@/lib/store"
 import type { TaggedItem } from "@/types"
-
-const READ_ITEMS_KEY = "read_items"
 
 export function getTaggedItemId(tagged: TaggedItem): string {
   return `${tagged.provider}:${tagged.item.id}`
@@ -23,9 +21,8 @@ export const useReadItemsStore = create<ReadItemsState>()((set, get) => ({
 
   init: async () => {
     if (get().initialized) return
-    const stored = await AsyncStorage.getItem(READ_ITEMS_KEY)
-    const ids: string[] = stored ? (JSON.parse(stored) as string[]) : []
-    set({ readIds: new Set(ids), initialized: true })
+    const stored = await readReadItems()
+    set({ readIds: new Set(stored), initialized: true })
   },
 
   markRead: async (tagged: TaggedItem) => {
@@ -35,15 +32,16 @@ export const useReadItemsStore = create<ReadItemsState>()((set, get) => ({
     const next = new Set(readIds)
     next.add(id)
     set({ readIds: next })
-    await AsyncStorage.setItem(READ_ITEMS_KEY, JSON.stringify([...next]))
+    await writeReadItems([...next])
   },
 
   markAllRead: async (items: TaggedItem[]) => {
     const { readIds } = get()
     const next = new Set(readIds)
-    items.forEach((item) => next.add(getTaggedItemId(item)))
+    for (const tagged of items) next.add(getTaggedItemId(tagged))
+    if (next.size === readIds.size) return
     set({ readIds: next })
-    await AsyncStorage.setItem(READ_ITEMS_KEY, JSON.stringify([...next]))
+    await writeReadItems([...next])
   },
 
   cleanup: async (currentIds: Set<string>) => {
@@ -52,6 +50,6 @@ export const useReadItemsStore = create<ReadItemsState>()((set, get) => ({
     if (filtered.length === readIds.size) return
     const next = new Set(filtered)
     set({ readIds: next })
-    await AsyncStorage.setItem(READ_ITEMS_KEY, JSON.stringify(filtered))
+    await writeReadItems(filtered)
   },
 }))

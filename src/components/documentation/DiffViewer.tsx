@@ -49,7 +49,8 @@ export function DiffViewer({ docId, versionId }: DiffViewerProps) {
             <Text className="font-semibold text-gray-900 dark:text-white">{docName}</Text>
             <Text className="text-xs text-gray-400">
               {t.documentation.version} {version}
-              {scraped_at && ` · ${t.documentation.scrapedAt} ${new Date(scraped_at).toLocaleDateString()}`}
+              {scraped_at &&
+                ` · ${t.documentation.scrapedAt} ${new Date(scraped_at).toLocaleDateString()}`}
             </Text>
           </>
         )}
@@ -68,8 +69,8 @@ export function DiffViewer({ docId, versionId }: DiffViewerProps) {
                       kind === "added"
                         ? "bg-green-500/10"
                         : kind === "removed"
-                        ? "bg-red-500/10"
-                        : ""
+                          ? "bg-red-500/10"
+                          : ""
                     }`}
                   >
                     <Text
@@ -77,10 +78,10 @@ export function DiffViewer({ docId, versionId }: DiffViewerProps) {
                         kind === "added"
                           ? "text-green-700 dark:text-green-400"
                           : kind === "removed"
-                          ? "text-red-700 dark:text-red-400"
-                          : kind === "header"
-                          ? "text-gray-400"
-                          : "text-gray-700 dark:text-gray-300"
+                            ? "text-red-700 dark:text-red-400"
+                            : kind === "header"
+                              ? "text-gray-400"
+                              : "text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {line || " "}

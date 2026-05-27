@@ -1,4 +1,4 @@
-export type Provider = "changelog" | "youtube" | "rss" | "scrap"
+export type Provider = "changelog" | "youtube" | "rss" | "scrap" | "documentation"
 
 export interface UserRepository {
   id: string
@@ -80,6 +80,12 @@ export type TaggedItem =
 
 export type ConnectorItem = ChangelogItem | YoutubeItem | RssItem | ScrapItem
 
+export type TaggedItem =
+  | { provider: "changelog"; item: ChangelogItem }
+  | { provider: "youtube"; item: YoutubeItem }
+  | { provider: "rss"; item: RssItem }
+  | { provider: "scrap"; item: ScrapItem }
+
 export interface ConnectorData {
   connectors: {
     changelog?: ChangelogItem[]
@@ -99,6 +105,15 @@ export interface ScrapRepository {
   }
   created_at: string
   is_subscribed: boolean
+}
+
+export interface ScrapRequest {
+  id: string
+  user_id: string
+  user_email: string
+  url: string
+  status: "pending" | "approved" | "rejected"
+  created_at: string
 }
 
 export interface DocRegistry {

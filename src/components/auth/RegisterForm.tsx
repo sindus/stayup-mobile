@@ -4,13 +4,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useLanguage } from "@/context/LanguageContext"
 
-const schema = z.object({
-  name: z.string().min(1, "Nom requis"),
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "8 caractères minimum"),
-})
-
-type FormData = z.infer<typeof schema>
+type FormData = { name: string; email: string; password: string }
 
 interface RegisterFormProps {
   onSubmit: (name: string, email: string, password: string) => Promise<void>
@@ -20,7 +14,16 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSubmit, loading, error }: RegisterFormProps) {
   const { t } = useLanguage()
-  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const schema = z.object({
+    name: z.string().min(1, t.auth.nameRequired),
+    email: z.string().email(t.auth.emailInvalid),
+    password: z.string().min(8, t.auth.passwordTooShort),
+  })
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -40,7 +43,7 @@ export function RegisterForm({ onSubmit, loading, error }: RegisterFormProps) {
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
-              placeholder="Jean Dupont"
+              placeholder={t.auth.namePlaceholder}
               placeholderTextColor="#9ca3af"
             />
           )}
@@ -71,7 +74,9 @@ export function RegisterForm({ onSubmit, loading, error }: RegisterFormProps) {
       </View>
 
       <View className="gap-1.5">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.auth.password}</Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t.auth.password}
+        </Text>
         <Controller
           control={control}
           name="password"

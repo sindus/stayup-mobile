@@ -45,7 +45,11 @@ export function HistoryList({ docId }: HistoryListProps) {
         contentContainerClassName="p-4 gap-3"
         renderItem={({ item: v }) => (
           <Pressable
-            onPress={v.has_diff ? () => router.push(`/(app)/documentation/${docId}/diff/${v.id}`) : undefined}
+            onPress={
+              v.has_diff
+                ? () => router.push(`/(app)/documentation/${docId}/diff/${v.id}`)
+                : undefined
+            }
             className="flex-row items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
           >
             <View className="gap-1">
@@ -62,13 +66,11 @@ export function HistoryList({ docId }: HistoryListProps) {
                 )}
               </View>
               <Text className="text-xs text-gray-400">
-                {t.documentation.scrapedAt}{" "}
-                {new Date(v.scraped_at).toLocaleDateString("fr-FR")}
+                {t.documentation.scrapedAt} {new Date(v.scraped_at).toLocaleDateString("fr-FR")}
               </Text>
               {v.archived_at && (
                 <Text className="text-xs text-gray-400">
-                  {t.documentation.archivedAt}{" "}
-                  {new Date(v.archived_at).toLocaleDateString("fr-FR")}
+                  {t.documentation.archivedAt} {new Date(v.archived_at).toLocaleDateString("fr-FR")}
                 </Text>
               )}
             </View>

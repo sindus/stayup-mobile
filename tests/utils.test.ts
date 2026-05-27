@@ -1,4 +1,9 @@
-import { extractIdentifier, normalizeIdentifier, toRepositoryUrl, formatDate } from "../src/lib/utils"
+import {
+  extractIdentifier,
+  normalizeIdentifier,
+  toRepositoryUrl,
+  formatDate,
+} from "../src/lib/utils"
 
 describe("extractIdentifier", () => {
   it("extracts owner/repo for changelog", () => {
@@ -28,7 +33,9 @@ describe("extractIdentifier", () => {
 
 describe("normalizeIdentifier", () => {
   it("normalizes a full GitHub URL to owner/repo for changelog", () => {
-    expect(normalizeIdentifier("https://github.com/vercel/next.js", "changelog")).toBe("vercel/next.js")
+    expect(normalizeIdentifier("https://github.com/vercel/next.js", "changelog")).toBe(
+      "vercel/next.js",
+    )
   })
 
   it("strips .git suffix for changelog", () => {
@@ -52,7 +59,9 @@ describe("normalizeIdentifier", () => {
 
 describe("toRepositoryUrl", () => {
   it("builds GitHub URL for changelog", () => {
-    expect(toRepositoryUrl("facebook/react", "changelog")).toBe("https://github.com/facebook/react/")
+    expect(toRepositoryUrl("facebook/react", "changelog")).toBe(
+      "https://github.com/facebook/react/",
+    )
   })
 
   it("builds YouTube URL for youtube", () => {
