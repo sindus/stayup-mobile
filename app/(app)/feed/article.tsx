@@ -46,10 +46,7 @@ export default function ArticleScreen() {
           <ChevronLeft size={22} color="#6366f1" />
         </Pressable>
         <View className="flex-1">
-          <Text
-            className="text-sm font-semibold text-gray-900 dark:text-white"
-            numberOfLines={1}
-          >
+          <Text className="text-sm font-semibold text-gray-900 dark:text-white" numberOfLines={1}>
             {article.title}
           </Text>
           <View className="mt-0.5 flex-row items-center gap-1.5">
@@ -68,10 +65,7 @@ export default function ArticleScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView
-        contentContainerClassName="p-5 gap-4"
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerClassName="p-5 gap-4" showsVerticalScrollIndicator={false}>
         {/* YouTube : vignette + titre */}
         {article.provider === "youtube" && article.thumbnail && (
           <View className="overflow-hidden rounded-xl">
@@ -84,9 +78,7 @@ export default function ArticleScreen() {
         )}
 
         {/* Titre complet */}
-        <Text className="text-lg font-bold text-gray-900 dark:text-white">
-          {article.title}
-        </Text>
+        <Text className="text-lg font-bold text-gray-900 dark:text-white">{article.title}</Text>
 
         {/* Corps de l'article */}
         {article.content ? (
@@ -96,7 +88,8 @@ export default function ArticleScreen() {
         ) : (
           <View className="items-center py-10">
             <Text className="text-sm italic text-gray-400">
-              Aucun contenu disponible.{article.url ? "\nOuvre dans le navigateur pour voir l'article complet." : ""}
+              Aucun contenu disponible.
+              {article.url ? "\nOuvre dans le navigateur pour voir l'article complet." : ""}
             </Text>
           </View>
         )}

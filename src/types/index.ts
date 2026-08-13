@@ -80,12 +80,6 @@ export type TaggedItem =
 
 export type ConnectorItem = ChangelogItem | YoutubeItem | RssItem | ScrapItem
 
-export type TaggedItem =
-  | { provider: "changelog"; item: ChangelogItem }
-  | { provider: "youtube"; item: YoutubeItem }
-  | { provider: "rss"; item: RssItem }
-  | { provider: "scrap"; item: ScrapItem }
-
 export interface ConnectorData {
   connectors: {
     changelog?: ChangelogItem[]
