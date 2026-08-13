@@ -9,19 +9,11 @@ import {
   ActivityIndicator,
 } from "react-native"
 import { X } from "lucide-react-native"
-import {
-  addUserRepository,
-  createDocRequest,
-  createScrapRequest,
-  getDocs,
-  getScrapRepos,
-  subscribeDoc,
-  subscribeScrap,
-} from "@/lib/api"
+import { addUserRepository, createScrapRequest, getScrapRepos, subscribeScrap } from "@/lib/api"
 import { readApiUrl, readToken } from "@/lib/store"
 import { normalizeIdentifier, toRepositoryUrl } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
-import type { DocRegistry, Provider, ScrapRepository } from "@/types"
+import type { Provider, ScrapRepository } from "@/types"
 
 type FeedProvider = "changelog" | "youtube" | "rss"
 
@@ -30,7 +22,6 @@ const PROVIDERS: { value: Provider; label: string }[] = [
   { value: "youtube", label: "YouTube" },
   { value: "rss", label: "RSS" },
   { value: "scrap", label: "Scraping web" },
-  { value: "documentation", label: "Documentation" },
 ]
 
 interface AddFluxSheetProps {
@@ -51,10 +42,6 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
   const [scrapMode, setScrapMode] = useState<"select" | "request">("select")
   const [requestUrl, setRequestUrl] = useState("")
   const [requestSuccess, setRequestSuccess] = useState(false)
-  const [docMode, setDocMode] = useState<"select" | "request">("select")
-  const [docs, setDocs] = useState<DocRegistry[] | null>(null)
-  const [docId, setDocId] = useState<number | null>(null)
-  const [docRequestUrl, setDocRequestUrl] = useState("")
 
   useEffect(() => {
     if (provider !== "scrap") return
@@ -75,25 +62,6 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     }
   }, [provider])
 
-  useEffect(() => {
-    if (provider !== "documentation") return
-    let cancelled = false
-    Promise.all([readToken(), readApiUrl()])
-      .then(([token, apiUrl]) => {
-        if (cancelled || !token) return []
-        return getDocs(token, apiUrl)
-      })
-      .then((d) => {
-        if (!cancelled) setDocs(d ?? [])
-      })
-      .catch(() => {
-        if (!cancelled) setDocs([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [provider])
-
   function handleClose() {
     setProvider("changelog")
     setIdentifier("")
@@ -103,10 +71,6 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     setScrapMode("select")
     setRequestUrl("")
     setRequestSuccess(false)
-    setDocMode("select")
-    setDocs(null)
-    setDocId(null)
-    setDocRequestUrl("")
     onClose()
   }
 
@@ -130,51 +94,6 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
         if (!token) throw new Error("Token manquant")
         await createScrapRequest({ url: requestUrl }, token, apiUrl)
         setRequestSuccess(true)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t.common.error)
-      } finally {
-        setSubmitting(false)
-      }
-      return
-    }
-
-    if (provider === "documentation" && docMode === "request") {
-      if (!docRequestUrl.trim()) {
-        setError(t.addFlux.requiredError)
-        return
-      }
-      try {
-        new URL(docRequestUrl)
-      } catch {
-        setError(t.addFlux.requestUrlError)
-        return
-      }
-      setSubmitting(true)
-      try {
-        const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
-        if (!token) throw new Error("Token manquant")
-        await createDocRequest({ url: docRequestUrl }, token, apiUrl)
-        setRequestSuccess(true)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t.common.error)
-      } finally {
-        setSubmitting(false)
-      }
-      return
-    }
-
-    if (provider === "documentation" && docMode === "select") {
-      if (!docId) {
-        setError(t.addFlux.selectError)
-        return
-      }
-      setSubmitting(true)
-      try {
-        const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
-        if (!token) throw new Error("Token manquant")
-        await subscribeDoc(docId, token, apiUrl)
-        onSuccess()
-        handleClose()
       } catch (err) {
         setError(err instanceof Error ? err.message : t.common.error)
       } finally {
@@ -271,9 +190,6 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                             setScrapRepoId(null)
                             setScrapRepos(null)
                             setScrapMode("select")
-                            setDocMode("select")
-                            setDocs(null)
-                            setDocId(null)
                             setError(null)
                           }}
                           className={`rounded-full px-3 py-1.5 ${
@@ -293,82 +209,8 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                   </ScrollView>
                 </View>
 
-                {/* Identifier / doc / scrap selector */}
-                {provider === "documentation" ? (
-                  <View className="gap-3">
-                    <View className="flex-row gap-2">
-                      <Pressable
-                        onPress={() => setDocMode("select")}
-                        className={`rounded-full px-3 py-1.5 ${docMode === "select" ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"}`}
-                      >
-                        <Text
-                          className={`text-xs font-medium ${docMode === "select" ? "text-white" : "text-gray-700 dark:text-gray-300"}`}
-                        >
-                          {t.addFlux.chooseExisting}
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setDocMode("request")}
-                        className={`rounded-full px-3 py-1.5 ${docMode === "request" ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"}`}
-                      >
-                        <Text
-                          className={`text-xs font-medium ${docMode === "request" ? "text-white" : "text-gray-700 dark:text-gray-300"}`}
-                        >
-                          {t.addFlux.makeRequest}
-                        </Text>
-                      </Pressable>
-                    </View>
-
-                    {docMode === "select" ? (
-                      <View className="gap-1.5">
-                        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {t.addFlux.docRegistry}
-                        </Text>
-                        {docs === null ? (
-                          <ActivityIndicator size="small" />
-                        ) : docs.filter((d) => !d.is_subscribed).length === 0 ? (
-                          <Text className="text-sm text-gray-400">{t.addFlux.noDocRegistries}</Text>
-                        ) : (
-                          docs
-                            .filter((d) => !d.is_subscribed)
-                            .map((d) => (
-                              <Pressable
-                                key={d.id}
-                                onPress={() => setDocId(d.id)}
-                                className={`rounded-lg border p-3 ${
-                                  docId === d.id
-                                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                                    : "border-gray-200 dark:border-gray-700"
-                                }`}
-                              >
-                                <Text
-                                  className="text-sm text-gray-800 dark:text-gray-200"
-                                  numberOfLines={1}
-                                >
-                                  {d.name}
-                                </Text>
-                              </Pressable>
-                            ))
-                        )}
-                      </View>
-                    ) : (
-                      <View className="gap-1.5">
-                        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {t.addFlux.docRequestUrl}
-                        </Text>
-                        <TextInput
-                          className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                          value={docRequestUrl}
-                          onChangeText={setDocRequestUrl}
-                          placeholder={t.addFlux.docRequestUrlPlaceholder}
-                          placeholderTextColor="#9ca3af"
-                          autoCapitalize="none"
-                          keyboardType="url"
-                        />
-                      </View>
-                    )}
-                  </View>
-                ) : provider === "scrap" ? (
+                {/* Identifier / scrap selector */}
+                {provider === "scrap" ? (
                   <View className="gap-3">
                     {/* Mode toggle */}
                     <View className="flex-row gap-2">

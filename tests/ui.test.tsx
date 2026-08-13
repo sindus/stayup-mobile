@@ -1,0 +1,49 @@
+import { screen, fireEvent, waitFor } from "@testing-library/react-native"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher"
+import { renderWithProviders } from "./render"
+
+const asyncStorage = AsyncStorage as unknown as { getItem: jest.Mock; setItem: jest.Mock }
+
+beforeEach(() => {
+  asyncStorage.getItem.mockResolvedValue(null)
+})
+
+describe("ThemeToggle", () => {
+  it("offers to switch to dark mode while in light mode", async () => {
+    renderWithProviders(<ThemeToggle />)
+
+    await waitFor(() => expect(screen.getByText("Mode sombre")).toBeTruthy())
+    expect(screen.getByTestId("icon-Moon")).toBeTruthy()
+  })
+
+  it("offers to switch back to light mode once dark", async () => {
+    renderWithProviders(<ThemeToggle />)
+    await waitFor(() => expect(screen.getByText("Mode sombre")).toBeTruthy())
+
+    fireEvent.press(screen.getByText("Mode sombre"))
+
+    await waitFor(() => expect(screen.getByText("Mode clair")).toBeTruthy())
+    expect(screen.getByTestId("icon-Sun")).toBeTruthy()
+    expect(asyncStorage.setItem).toHaveBeenCalledWith("theme", "dark")
+  })
+})
+
+describe("LanguageSwitcher", () => {
+  it("lists both languages", async () => {
+    renderWithProviders(<LanguageSwitcher />)
+
+    await waitFor(() => expect(screen.getByText("Français")).toBeTruthy())
+    expect(screen.getByText("English")).toBeTruthy()
+  })
+
+  it("switches the app to English", async () => {
+    renderWithProviders(<LanguageSwitcher />)
+    await waitFor(() => expect(screen.getByText("English")).toBeTruthy())
+
+    fireEvent.press(screen.getByText("English"))
+
+    await waitFor(() => expect(asyncStorage.setItem).toHaveBeenCalledWith("lang", "en"))
+  })
+})

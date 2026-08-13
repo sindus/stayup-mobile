@@ -1,5 +1,5 @@
 import { Tabs, Redirect } from "expo-router"
-import { BookOpen, Rss, User } from "lucide-react-native"
+import { Rss, User } from "lucide-react-native"
 import { useAuth } from "@/hooks/useAuth"
 import { useLanguage } from "@/context/LanguageContext"
 import { View, ActivityIndicator } from "react-native"
@@ -40,13 +40,6 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="documentation/index"
-        options={{
-          title: t.tabs.docs,
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
         name="profile/index"
         options={{
           title: t.tabs.profile,
@@ -56,9 +49,6 @@ export default function AppLayout() {
       <Tabs.Screen name="feed/flux/[id]" options={{ href: null }} />
       <Tabs.Screen name="feed/detail" options={{ href: null }} />
       <Tabs.Screen name="feed/article" options={{ href: null }} />
-      <Tabs.Screen name="documentation/[id]" options={{ href: null }} />
-      <Tabs.Screen name="documentation/[id]/history" options={{ href: null }} />
-      <Tabs.Screen name="documentation/[id]/diff/[versionId]" options={{ href: null }} />
     </Tabs>
   )
 }

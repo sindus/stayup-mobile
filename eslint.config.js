@@ -6,7 +6,7 @@ const reactHooksPlugin = require("eslint-plugin-react-hooks")
 /** @type {import('eslint').Linter.FlatConfig[]} */
 module.exports = [
   {
-    ignores: ["node_modules/**", ".expo/**", "dist/**"],
+    ignores: ["node_modules/**", ".expo/**", "dist/**", "coverage/**"],
   },
   // TypeScript
   ...tsPlugin.configs["flat/recommended"],
@@ -55,6 +55,13 @@ module.exports = [
   // Allow require() in CommonJS config files (must come after flat/recommended to override catchall)
   {
     files: ["*.js", "*.cjs"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  // Les factories de jest.mock() sont hoistées : elles ne peuvent pas utiliser d'import.
+  {
+    files: ["tests/setup.ts", "__mocks__/**"],
     rules: {
       "@typescript-eslint/no-require-imports": "off",
     },

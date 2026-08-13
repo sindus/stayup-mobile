@@ -13,7 +13,6 @@ const PROVIDER_COLORS: Record<Provider, string> = {
   youtube: "#f43f5e",
   rss: "#f59e0b",
   scrap: "#22c55e",
-  documentation: "#6366f1",
 }
 
 interface FeedFluxListProps {

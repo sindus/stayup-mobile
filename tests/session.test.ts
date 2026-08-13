@@ -29,6 +29,10 @@ describe("decodeToken", () => {
     expect(session.email).toBe("")
     expect(session.role).toBe("user")
   })
+
+  it("falls back to an empty userId when sub is missing", () => {
+    expect(decodeToken(makeToken({})).userId).toBe("")
+  })
 })
 
 describe("isTokenExpired", () => {
@@ -40,6 +44,14 @@ describe("isTokenExpired", () => {
   it("returns true for a past exp", () => {
     const token = makeToken({ exp: Math.floor(Date.now() / 1000) - 1 })
     expect(isTokenExpired(token)).toBe(true)
+  })
+
+  it("returns true for a malformed token", () => {
+    expect(isTokenExpired("not-a-jwt")).toBe(true)
+  })
+
+  it("returns true when the payload is not valid JSON", () => {
+    expect(isTokenExpired(`${btoa("{}")}.${btoa("{nope")}.sig`)).toBe(true)
   })
 
   it("returns true when exp is missing", () => {
