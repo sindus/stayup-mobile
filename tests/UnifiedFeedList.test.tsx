@@ -110,12 +110,10 @@ describe("ChangelogEntry", () => {
     expect(screen.getByText("Titre Corps du changelog")).toBeTruthy()
   })
 
-  it("renders an empty repo name when the repository url is unknown", () => {
-    // NB : le repoUrl vaut "" (et non undefined), donc le fallback `?? repositoryLabel`
-    // du composant n'est jamais atteint — le nom de dépôt s'affiche vide.
+  it("falls back to the repository label when the repository url is unknown", () => {
     renderWithProviders(<UnifiedFeedList {...empty} changelog={[changelog()]} />)
 
-    expect(screen.queryByText("dépôt")).toBeNull()
+    expect(screen.getByText("dépôt")).toBeTruthy()
     expect(screen.getByText("v1.2.3")).toBeTruthy()
   })
 

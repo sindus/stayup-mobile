@@ -133,7 +133,7 @@ function ChangelogEntry({
   repositoryLabel: string
 }) {
   const href = repoUrl ? `${repoUrl}/releases/tag/${item.version}` : undefined
-  const repoName = repoUrl?.replace("https://github.com/", "") ?? repositoryLabel
+  const repoName = repoUrl.replace("https://github.com/", "") || repositoryLabel
 
   return (
     <Pressable
