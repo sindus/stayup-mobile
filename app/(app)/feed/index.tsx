@@ -147,6 +147,7 @@ export default function FeedScreen() {
         onSelectProvider={setSelectedProvider}
         onAddPress={() => setAddVisible(true)}
         onDeleted={refresh}
+        onImported={refresh}
         unreadCountByRepoId={unreadCountByRepoId}
       />
 
