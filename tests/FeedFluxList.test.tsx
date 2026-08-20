@@ -32,6 +32,7 @@ function setup(props: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
   const onSelectProvider = jest.fn()
   const onAddPress = jest.fn()
   const onDeleted = jest.fn()
+  const onImported = jest.fn()
 
   renderWithProviders(
     <FeedFluxList
@@ -41,11 +42,12 @@ function setup(props: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
       onSelectProvider={onSelectProvider}
       onAddPress={onAddPress}
       onDeleted={onDeleted}
+      onImported={onImported}
       {...props}
     />,
   )
 
-  return { onSelectProvider, onAddPress, onDeleted }
+  return { onSelectProvider, onAddPress, onDeleted, onImported }
 }
 
 beforeEach(() => {

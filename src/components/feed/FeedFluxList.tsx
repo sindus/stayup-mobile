@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ScrollView, View, Text, Pressable, Alert } from "react-native"
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react-native"
+import { ImportExportButtons } from "./ImportExportButtons"
 import type { FeedFlux } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
@@ -22,6 +23,7 @@ interface FeedFluxListProps {
   onSelectProvider: (p: Provider | null) => void
   onAddPress: () => void
   onDeleted: () => void
+  onImported: () => void
   unreadCountByRepoId?: Record<number, number>
 }
 
@@ -32,6 +34,7 @@ export function FeedFluxList({
   onSelectProvider,
   onAddPress,
   onDeleted,
+  onImported,
   unreadCountByRepoId = {},
 }: FeedFluxListProps) {
   const { t } = useLanguage()
@@ -98,6 +101,7 @@ export function FeedFluxList({
           >
             <Plus size={16} color="#6366f1" />
           </Pressable>
+          <ImportExportButtons fluxes={fluxes} userId={userId} onImported={onImported} />
           {expanded ? (
             <ChevronUp size={16} color="#9ca3af" />
           ) : (
