@@ -1,4 +1,6 @@
-export const fr = {
+import type { Translations } from "./en"
+
+export const fr: Translations = {
   auth: {
     subtitle: "Connectez-vous pour accéder à vos flux",
     email: "Email",
@@ -96,8 +98,6 @@ export const fr = {
     language: "Langue",
     lightMode: "Mode clair",
     darkMode: "Mode sombre",
-    french: "Français",
-    english: "English",
   },
   common: {
     delete: "Supprimer",
@@ -107,5 +107,3 @@ export const fr = {
     error: "Une erreur est survenue.",
   },
 }
-
-export type Translations = typeof fr

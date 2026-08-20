@@ -186,7 +186,7 @@ describe("ProfileScreen", () => {
     await waitFor(() => expect(screen.getByText("Thème")).toBeTruthy())
     expect(screen.getByText("Langue")).toBeTruthy()
     expect(screen.getByText("Mode sombre")).toBeTruthy()
-    expect(screen.getByText("Français")).toBeTruthy()
+    expect(screen.getByText("🇫🇷 Français")).toBeTruthy()
   })
 
   it("signs the user out", async () => {

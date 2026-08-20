@@ -31,18 +31,24 @@ describe("ThemeToggle", () => {
 })
 
 describe("LanguageSwitcher", () => {
-  it("lists both languages", async () => {
+  it("lists every supported language", async () => {
     renderWithProviders(<LanguageSwitcher />)
 
-    await waitFor(() => expect(screen.getByText("Français")).toBeTruthy())
-    expect(screen.getByText("English")).toBeTruthy()
+    await waitFor(() => expect(screen.getByText("🇫🇷 Français")).toBeTruthy())
+    expect(screen.getByText("🇬🇧 English")).toBeTruthy()
+    expect(screen.getByText("🇩🇪 Deutsch")).toBeTruthy()
+    expect(screen.getByText("🇪🇸 Español")).toBeTruthy()
+    expect(screen.getByText("🇮🇹 Italiano")).toBeTruthy()
+    expect(screen.getByText("🇵🇹 Português")).toBeTruthy()
+    expect(screen.getByText("🇯🇵 日本語")).toBeTruthy()
+    expect(screen.getByText("🇨🇳 中文")).toBeTruthy()
   })
 
   it("switches the app to English", async () => {
     renderWithProviders(<LanguageSwitcher />)
-    await waitFor(() => expect(screen.getByText("English")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("🇬🇧 English")).toBeTruthy())
 
-    fireEvent.press(screen.getByText("English"))
+    fireEvent.press(screen.getByText("🇬🇧 English"))
 
     await waitFor(() => expect(asyncStorage.setItem).toHaveBeenCalledWith("lang", "en"))
   })

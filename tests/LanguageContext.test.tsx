@@ -11,16 +11,16 @@ function Probe() {
     <>
       <Text testID="lang">{lang}</Text>
       <Text testID="label">{t.auth.signIn}</Text>
-      <Pressable testID="to-en" onPress={() => setLang("en")}>
+      <Pressable testID="to-fr" onPress={() => setLang("fr")}>
         <Text>switch</Text>
       </Pressable>
     </>
   )
 }
 
-function renderProbe() {
+function renderProbe(initialLang?: "en" | "fr" | "de" | "es" | "it" | "pt" | "ja" | "zh") {
   return render(
-    <LanguageProvider>
+    <LanguageProvider initialLang={initialLang}>
       <Probe />
     </LanguageProvider>,
   )
@@ -31,30 +31,37 @@ beforeEach(() => {
 })
 
 describe("LanguageProvider", () => {
-  it("defaults to French when nothing is stored", async () => {
+  it("defaults to English when nothing is stored", async () => {
     renderProbe()
+
+    await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("en"))
+    expect(screen.getByTestId("label")).toHaveTextContent("Sign in")
+  })
+
+  it("restores the stored language", async () => {
+    asyncStorage.getItem.mockResolvedValue("de")
+    renderProbe()
+
+    await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("de"))
+    expect(screen.getByTestId("label")).toHaveTextContent("Anmelden")
+  })
+
+  it("accepts an explicit initial language", async () => {
+    renderProbe("fr")
 
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("fr"))
     expect(screen.getByTestId("label")).toHaveTextContent("Se connecter")
   })
 
-  it("restores the stored language", async () => {
-    asyncStorage.getItem.mockResolvedValue("en")
-    renderProbe()
-
-    await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("en"))
-    expect(screen.getByTestId("label")).toHaveTextContent("Sign in")
-  })
-
   it("switches language and persists the choice", async () => {
     renderProbe()
-    await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("fr"))
-
-    fireEvent.press(screen.getByTestId("to-en"))
-
     await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("en"))
-    expect(screen.getByTestId("label")).toHaveTextContent("Sign in")
-    expect(asyncStorage.setItem).toHaveBeenCalledWith("lang", "en")
+
+    fireEvent.press(screen.getByTestId("to-fr"))
+
+    await waitFor(() => expect(screen.getByTestId("lang")).toHaveTextContent("fr"))
+    expect(screen.getByTestId("label")).toHaveTextContent("Se connecter")
+    expect(asyncStorage.setItem).toHaveBeenCalledWith("lang", "fr")
   })
 })
 
