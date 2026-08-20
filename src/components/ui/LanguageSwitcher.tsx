@@ -3,15 +3,21 @@ import { useLanguage } from "@/context/LanguageContext"
 import type { Language } from "@/lib/translations"
 
 const LANGUAGES: { code: Language; label: string }[] = [
-  { code: "fr", label: "Français" },
-  { code: "en", label: "English" },
+  { code: "en", label: "🇬🇧 English" },
+  { code: "fr", label: "🇫🇷 Français" },
+  { code: "de", label: "🇩🇪 Deutsch" },
+  { code: "es", label: "🇪🇸 Español" },
+  { code: "it", label: "🇮🇹 Italiano" },
+  { code: "pt", label: "🇵🇹 Português" },
+  { code: "ja", label: "🇯🇵 日本語" },
+  { code: "zh", label: "🇨🇳 中文" },
 ]
 
 export function LanguageSwitcher() {
   const { lang, setLang } = useLanguage()
 
   return (
-    <View className="flex-row gap-2">
+    <View className="flex-row flex-wrap gap-2">
       {LANGUAGES.map(({ code, label }) => (
         <Pressable
           key={code}
