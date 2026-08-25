@@ -9,6 +9,7 @@ import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { useReadItemsStore } from "@/store/readItems"
 import { useLanguage } from "@/context/LanguageContext"
 import { formatDate, openUrl } from "@/lib/utils"
+import { colors } from "@/theme"
 import type { TaggedItem, YoutubeItemContent, RssItemContent, ScrapItemParams } from "@/types"
 
 const LS_FONT_KEY = "STAYUP_FONT_SIZE_OFFSET"
@@ -99,18 +100,22 @@ export default function FeedDetailScreen() {
   const bodyFontSize = BASE_FONT + fontSizeOffset
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={["top"]}>
-      <View className="flex-row items-center gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+    <SafeAreaView className="flex-1 bg-bg" edges={["top"]}>
+      <View
+        className="flex-row items-center gap-2 border-b px-4 py-3"
+        style={{ borderColor: colors.borderSoft }}
+      >
         <Pressable
           onPress={() => router.back()}
           className="rounded p-1"
           style={{ marginLeft: -4 }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <ChevronLeft size={20} color="#6b7280" />
+          <ChevronLeft size={20} color={colors.muted} />
         </Pressable>
         <Text
-          className="flex-1 text-base font-semibold text-gray-900 dark:text-gray-100"
+          className="flex-1 text-base font-semibold"
+          style={{ color: colors.fg }}
           numberOfLines={1}
         >
           {getTitle(tagged, t.viewer.noTitle, t.viewer.scrap)}
@@ -122,7 +127,9 @@ export default function FeedDetailScreen() {
             className="rounded px-2 py-1"
             style={{ opacity: fontSizeOffset <= MIN_OFFSET ? 0.35 : 1 }}
           >
-            <Text className="font-mono text-base text-gray-500 dark:text-gray-400">A−</Text>
+            <Text className="font-mono text-base" style={{ color: colors.muted }}>
+              A−
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => adjustFont(1)}
@@ -130,7 +137,9 @@ export default function FeedDetailScreen() {
             className="rounded px-2 py-1"
             style={{ opacity: fontSizeOffset >= MAX_OFFSET ? 0.35 : 1 }}
           >
-            <Text className="font-mono text-lg text-gray-500 dark:text-gray-400">A+</Text>
+            <Text className="font-mono text-lg" style={{ color: colors.muted }}>
+              A+
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -192,22 +201,21 @@ function ChangelogDetail({
   return (
     <View>
       <View className="mb-4 flex-row items-center gap-2">
-        <Text className="text-sm font-mono text-gray-500">{repoName}</Text>
-        <View className="rounded bg-teal-50 px-1.5 py-0.5 dark:bg-teal-900/30">
-          <Text className="text-sm font-mono font-semibold text-teal-700 dark:text-teal-400">
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
+          {repoName}
+        </Text>
+        <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.peachDim }}>
+          <Text className="text-sm font-mono font-semibold" style={{ color: colors.peach }}>
             {item.version}
           </Text>
         </View>
-        <Text className="ml-auto text-sm font-mono text-gray-500">
+        <Text className="ml-auto text-sm font-mono" style={{ color: colors.dim }}>
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
 
       {item.content && (
-        <Text
-          className="leading-relaxed text-gray-700 dark:text-gray-300"
-          style={{ fontSize: bodyFontSize }}
-        >
+        <Text className="leading-relaxed" style={{ fontSize: bodyFontSize, color: colors.fgSoft }}>
           {item.content
             .replace(/#{1,6}\s/g, "")
             .replace(/\*\*(.*?)\*\*/g, "$1")
@@ -218,9 +226,10 @@ function ChangelogDetail({
       {href && (
         <Pressable
           onPress={() => openUrl(href)}
-          className="mt-6 rounded-lg bg-teal-50 px-4 py-2.5 dark:bg-teal-900/20"
+          className="mt-6 rounded-xl px-4 py-3"
+          style={{ backgroundColor: colors.peachDim }}
         >
-          <Text className="text-center text-base font-medium text-teal-700 dark:text-teal-400">
+          <Text className="text-center text-base font-medium" style={{ color: colors.peach }}>
             {openOnGithub}
           </Text>
         </Pressable>
@@ -253,21 +262,25 @@ function YoutubeDetail({
   return (
     <View>
       <Text
-        className="mb-2 font-semibold text-gray-900 dark:text-gray-100 leading-snug"
-        style={{ fontSize: bodyFontSize + 2 }}
+        className="mb-2 leading-snug"
+        style={{ fontSize: bodyFontSize + 8, color: colors.fg, fontFamily: "InstrumentSerif" }}
       >
         {parsed?.title ?? noTitle}
       </Text>
 
       <View className="mb-4 flex-row items-center gap-3">
-        {channelName && <Text className="text-sm font-mono text-rose-400">{channelName}</Text>}
-        <Text className="text-sm font-mono text-gray-500">
+        {channelName && (
+          <Text className="text-sm font-mono" style={{ color: colors.rose }}>
+            {channelName}
+          </Text>
+        )}
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
 
       {parsed?.thumbnail && (
-        <View className="mb-4 overflow-hidden rounded-lg" style={{ aspectRatio: 16 / 9 }}>
+        <View className="mb-4 overflow-hidden rounded-xl" style={{ aspectRatio: 16 / 9 }}>
           <Image
             source={{ uri: parsed.thumbnail }}
             style={{ width: "100%", height: "100%" }}
@@ -279,9 +292,10 @@ function YoutubeDetail({
       {videoUrl && (
         <Pressable
           onPress={() => openUrl(videoUrl)}
-          className="rounded-lg bg-rose-50 px-4 py-2.5 dark:bg-rose-900/20"
+          className="rounded-xl px-4 py-3"
+          style={{ backgroundColor: colors.roseDim }}
         >
-          <Text className="text-center text-base font-medium text-rose-600 dark:text-rose-400">
+          <Text className="text-center text-base font-medium" style={{ color: colors.rose }}>
             {watchOnYoutube}
           </Text>
         </Pressable>
@@ -314,24 +328,25 @@ function RssDetail({
   return (
     <View>
       <Text
-        className="mb-2 font-semibold text-gray-900 dark:text-gray-100 leading-snug"
-        style={{ fontSize: bodyFontSize + 2 }}
+        className="mb-2 leading-snug"
+        style={{ fontSize: bodyFontSize + 8, color: colors.fg, fontFamily: "InstrumentSerif" }}
       >
         {parsed?.title ?? noTitle}
       </Text>
 
       <View className="mb-4 flex-row items-center gap-3">
-        {source && <Text className="text-sm font-mono text-amber-500">{source}</Text>}
-        <Text className="text-sm font-mono text-gray-500">
+        {source && (
+          <Text className="text-sm font-mono" style={{ color: colors.sage }}>
+            {source}
+          </Text>
+        )}
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
 
       {summary && (
-        <Text
-          className="leading-relaxed text-gray-700 dark:text-gray-300"
-          style={{ fontSize: bodyFontSize }}
-        >
+        <Text className="leading-relaxed" style={{ fontSize: bodyFontSize, color: colors.fgSoft }}>
           {summary}
         </Text>
       )}
@@ -339,9 +354,10 @@ function RssDetail({
       {parsed?.link && (
         <Pressable
           onPress={() => openUrl(parsed!.link)}
-          className="mt-6 rounded-lg bg-amber-50 px-4 py-2.5 dark:bg-amber-900/20"
+          className="mt-6 rounded-xl px-4 py-3"
+          style={{ backgroundColor: colors.sageDim }}
         >
-          <Text className="text-center text-base font-medium text-amber-700 dark:text-amber-400">
+          <Text className="text-center text-base font-medium" style={{ color: colors.sage }}>
             {readArticle}
           </Text>
         </Pressable>
@@ -374,20 +390,21 @@ function ScrapDetail({
     <View>
       <View className="mb-4 flex-row items-center gap-3">
         {params?.url && (
-          <Text className="flex-1 text-sm font-mono text-green-600" numberOfLines={1}>
+          <Text
+            className="flex-1 text-sm font-mono"
+            style={{ color: colors.sky }}
+            numberOfLines={1}
+          >
             {params.url}
           </Text>
         )}
-        <Text className="text-sm font-mono text-gray-500 shrink-0">
+        <Text className="text-sm font-mono shrink-0" style={{ color: colors.dim }}>
           {formatDate(item.executed_at)}
         </Text>
       </View>
 
       {item.content && (
-        <Text
-          className="leading-relaxed text-gray-700 dark:text-gray-300"
-          style={{ fontSize: bodyFontSize }}
-        >
+        <Text className="leading-relaxed" style={{ fontSize: bodyFontSize, color: colors.fgSoft }}>
           {item.content}
         </Text>
       )}
@@ -395,9 +412,10 @@ function ScrapDetail({
       {params?.url && (
         <Pressable
           onPress={() => openUrl(params.url)}
-          className="mt-6 rounded-lg bg-green-50 px-4 py-2.5 dark:bg-green-900/20"
+          className="mt-6 rounded-xl px-4 py-3"
+          style={{ backgroundColor: colors.skyDim }}
         >
-          <Text className="text-center text-base font-medium text-green-700 dark:text-green-400">
+          <Text className="text-center text-base font-medium" style={{ color: colors.sky }}>
             {visitWebsite}
           </Text>
         </Pressable>

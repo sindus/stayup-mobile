@@ -12,6 +12,7 @@ import type {
 } from "@/types"
 import { formatDate, openUrl } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
+import { colors } from "@/theme"
 
 function extractHostname(url: string): string {
   try {
@@ -77,7 +78,9 @@ export function UnifiedFeedList({
   if (all.length === 0 && !loading) {
     return (
       <View className="flex-1 items-center justify-center py-16">
-        <Text className="text-base italic text-gray-400">{t.feed.noContent}</Text>
+        <Text className="text-base italic" style={{ color: colors.dim }}>
+          {t.feed.noContent}
+        </Text>
       </View>
     )
   }
@@ -93,8 +96,8 @@ export function UnifiedFeedList({
         const isOpen = id === openItemId
         return (
           <View
-            className="border-b border-gray-100 px-4 py-3 dark:border-gray-800"
-            style={{ opacity: isRead && !isOpen ? 0.45 : 1 }}
+            className="border-b px-4 py-3"
+            style={{ borderColor: colors.borderSoft, opacity: isRead && !isOpen ? 0.45 : 1 }}
           >
             {tagged.provider === "changelog" && (
               <ChangelogEntry
@@ -115,7 +118,9 @@ export function UnifiedFeedList({
         )
       }}
       refreshControl={
-        onRefresh ? <RefreshControl refreshing={!!loading} onRefresh={onRefresh} /> : undefined
+        onRefresh ? (
+          <RefreshControl refreshing={!!loading} onRefresh={onRefresh} tintColor={colors.peach} />
+        ) : undefined
       }
     />
   )
@@ -138,27 +143,30 @@ function ChangelogEntry({
   return (
     <Pressable
       onPress={onPress ?? (href ? () => openUrl(href) : undefined)}
-      className="border-l-2 border-teal-400 pl-3 py-1"
+      className="border-l-2 pl-3 py-1"
+      style={{ borderColor: colors.peach }}
     >
       <View className="mb-1 flex-row items-center gap-2">
         <Text
-          className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400"
+          className="flex-1 text-sm font-mono"
+          style={{ color: colors.muted }}
           numberOfLines={1}
         >
           {repoName}
         </Text>
-        <View className="rounded bg-teal-50 px-1.5 py-0.5 dark:bg-teal-900/30">
-          <Text className="text-sm font-mono font-semibold text-teal-700 dark:text-teal-400">
+        <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.peachDim }}>
+          <Text className="text-sm font-mono font-semibold" style={{ color: colors.peach }}>
             {item.version}
           </Text>
         </View>
-        <Text className="text-sm font-mono text-gray-400 dark:text-gray-500">
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
       {item.content && (
         <Text
-          className="text-base leading-relaxed text-gray-600 dark:text-gray-400"
+          className="text-base leading-relaxed"
+          style={{ color: colors.fgSoft }}
           numberOfLines={2}
         >
           {item.content
@@ -194,7 +202,10 @@ function YoutubeEntry({
       onPress={onPress ?? (videoUrl ? () => openUrl(videoUrl) : undefined)}
       className="flex-row gap-3"
     >
-      <View className="h-14 w-24 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+      <View
+        className="h-14 w-24 overflow-hidden rounded"
+        style={{ backgroundColor: colors.surface }}
+      >
         {parsed?.thumbnail ? (
           <Image
             source={{ uri: parsed.thumbnail }}
@@ -203,24 +214,27 @@ function YoutubeEntry({
           />
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-sm text-gray-400">▶</Text>
+            <Text className="text-sm" style={{ color: colors.rose }}>
+              ▶
+            </Text>
           </View>
         )}
       </View>
       <View className="flex-1">
         <Text
-          className="text-base font-medium leading-snug text-gray-900 dark:text-gray-100"
+          className="text-base font-medium leading-snug"
+          style={{ color: colors.fg }}
           numberOfLines={2}
         >
           {parsed?.title ?? noTitle}
         </Text>
         <View className="mt-1 flex-row items-center gap-2">
           {parsed?.url && (
-            <Text className="text-sm font-mono text-rose-400">
+            <Text className="text-sm font-mono" style={{ color: colors.rose }}>
               {extractChannelName(parsed.url)}
             </Text>
           )}
-          <Text className="text-sm font-mono text-gray-500">
+          <Text className="text-sm font-mono" style={{ color: colors.dim }}>
             {formatDate(item.datetime ?? item.executed_at)}
           </Text>
         </View>
@@ -250,22 +264,28 @@ function RssEntry({
   return (
     <Pressable
       onPress={onPress ?? (parsed?.link ? () => openUrl(parsed!.link) : undefined)}
-      className="border-l-2 border-amber-400 pl-3 py-1"
+      className="border-l-2 pl-3 py-1"
+      style={{ borderColor: colors.sage }}
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
         <Text
-          className="flex-1 text-base font-medium text-gray-900 dark:text-gray-100"
+          className="flex-1 text-base font-medium"
+          style={{ color: colors.fg }}
           numberOfLines={1}
         >
           {parsed?.title ?? noTitle}
         </Text>
-        <Text className="text-sm font-mono text-gray-500">
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
           {formatDate(item.datetime ?? item.executed_at)}
         </Text>
       </View>
-      {source && <Text className="mb-1 text-sm font-mono text-amber-400">{source}</Text>}
+      {source && (
+        <Text className="mb-1 text-sm font-mono" style={{ color: colors.sage }}>
+          {source}
+        </Text>
+      )}
       {parsed?.summary && (
-        <Text className="text-base leading-relaxed text-gray-400" numberOfLines={2}>
+        <Text className="text-base leading-relaxed" style={{ color: colors.dim }} numberOfLines={2}>
           {parsed.summary}
         </Text>
       )}
@@ -288,19 +308,27 @@ function ScrapEntry({ item, onPress }: { item: ScrapItem; onPress?: () => void }
   return (
     <Pressable
       onPress={onPress ?? (params?.url ? () => openUrl(params.url) : undefined)}
-      className="border-l-2 border-green-400 pl-3 py-1"
+      className="border-l-2 pl-3 py-1"
+      style={{ borderColor: colors.sky }}
     >
       <View className="mb-1 flex-row items-center justify-between gap-2">
         {params?.url && (
-          <Text className="flex-1 text-sm font-mono text-green-400" numberOfLines={1}>
+          <Text
+            className="flex-1 text-sm font-mono"
+            style={{ color: colors.sky }}
+            numberOfLines={1}
+          >
             {params.url}
           </Text>
         )}
-        <Text className="text-sm font-mono text-gray-500">{formatDate(item.executed_at)}</Text>
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
+          {formatDate(item.executed_at)}
+        </Text>
       </View>
       {item.content && (
         <Text
-          className="text-base leading-relaxed text-gray-600 dark:text-gray-400"
+          className="text-base leading-relaxed"
+          style={{ color: colors.fgSoft }}
           numberOfLines={2}
         >
           {item.content.slice(0, 200)}

@@ -12,6 +12,7 @@ import { AddFluxSheet } from "@/components/feed/AddFluxSheet"
 import { LoadingScreen } from "@/components/ui/LoadingScreen"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { useReadItemsStore, getTaggedItemId } from "@/store/readItems"
+import { colors } from "@/theme"
 import type { Provider, TaggedItem } from "@/types"
 
 type FilterMode = "all" | "unread"
@@ -100,10 +101,10 @@ export default function FeedScreen() {
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-white dark:bg-gray-950">
-        <Text className="text-sm text-red-500">{error}</Text>
-        <Pressable onPress={refresh} className="rounded-lg bg-indigo-600 px-4 py-2">
-          <Text className="text-white">{t.feed.retry}</Text>
+      <View className="flex-1 items-center justify-center gap-3 bg-bg">
+        <Text className="text-sm text-rose">{error}</Text>
+        <Pressable onPress={refresh} className="rounded-xl bg-peach px-4 py-2.5">
+          <Text className="font-semibold text-peach-on">{t.feed.retry}</Text>
         </Pressable>
       </View>
     )
@@ -139,7 +140,7 @@ export default function FeedScreen() {
   const totalItems = Object.values(providerFiltered).flat().length
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg" edges={["top"]}>
       <FeedFluxList
         fluxes={fluxes}
         userId={userId}
@@ -152,45 +153,42 @@ export default function FeedScreen() {
       />
 
       {/* Filter bar */}
-      <View className="flex-row items-center gap-1 border-b border-gray-100 px-3 py-1.5 dark:border-gray-800">
+      <View
+        className="flex-row items-center gap-1 border-b px-3 py-1.5"
+        style={{ borderColor: colors.borderSoft }}
+      >
         <Pressable
           onPress={() => setFilterState({ providerId: selectedProvider, mode: "all" })}
-          className={`flex-row items-center gap-1.5 rounded px-2.5 py-1 ${
-            filterMode === "all" ? "bg-gray-100 dark:bg-gray-800" : ""
-          }`}
+          className="flex-row items-center gap-1.5 rounded-md px-2.5 py-1"
+          style={filterMode === "all" ? { backgroundColor: colors.surface } : undefined}
         >
           <Text
-            className={`text-base ${
-              filterMode === "all"
-                ? "font-medium text-gray-900 dark:text-gray-100"
-                : "text-gray-500 dark:text-gray-400"
-            }`}
+            className="text-[15px]"
+            style={{ color: filterMode === "all" ? colors.fg : colors.muted }}
           >
             {t.feed.filterAll}
           </Text>
-          <View className="rounded bg-gray-200 px-1.5 py-0.5 dark:bg-gray-700">
-            <Text className="text-xs font-mono text-gray-500 dark:text-gray-400">{totalItems}</Text>
+          <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.surfaceHi }}>
+            <Text className="text-xs font-mono" style={{ color: colors.dim }}>
+              {totalItems}
+            </Text>
           </View>
         </Pressable>
 
         <Pressable
           onPress={() => setFilterState({ providerId: selectedProvider, mode: "unread" })}
-          className={`flex-row items-center gap-1.5 rounded px-2.5 py-1 ${
-            filterMode === "unread" ? "bg-gray-100 dark:bg-gray-800" : ""
-          }`}
+          className="flex-row items-center gap-1.5 rounded-md px-2.5 py-1"
+          style={filterMode === "unread" ? { backgroundColor: colors.surface } : undefined}
         >
           <Text
-            className={`text-base ${
-              filterMode === "unread"
-                ? "font-medium text-gray-900 dark:text-gray-100"
-                : "text-gray-500 dark:text-gray-400"
-            }`}
+            className="text-[15px]"
+            style={{ color: filterMode === "unread" ? colors.fg : colors.muted }}
           >
             {t.feed.filterUnread}
           </Text>
           {unreadCount > 0 && (
-            <View className="rounded bg-teal-100 px-1.5 py-0.5 dark:bg-teal-900/40">
-              <Text className="text-xs font-mono font-semibold text-teal-700 dark:text-teal-400">
+            <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.peachDim }}>
+              <Text className="text-xs font-mono font-semibold" style={{ color: colors.peach }}>
                 {unreadCount}
               </Text>
             </View>
@@ -205,7 +203,7 @@ export default function FeedScreen() {
             accessibilityLabel={t.feed.markAllRead}
             className="rounded p-1.5"
           >
-            <CheckCheck size={18} color="#6b7280" />
+            <CheckCheck size={18} color={colors.muted} />
           </Pressable>
         )}
       </View>

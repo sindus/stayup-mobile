@@ -5,13 +5,7 @@ import { useRouter } from "expo-router"
 import { ChevronLeft, ChevronUp, ChevronDown, ExternalLink } from "lucide-react-native"
 import { useFeedReaderStore } from "@/store/feedReader"
 import { openUrl } from "@/lib/utils"
-
-const PROVIDER_COLORS = {
-  changelog: "#14b8a6",
-  youtube: "#f43f5e",
-  rss: "#f59e0b",
-  scrap: "#22c55e",
-}
+import { colors, provider as providerMeta } from "@/theme"
 
 export default function ArticleScreen() {
   const router = useRouter()
@@ -39,27 +33,32 @@ export default function ArticleScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-bg" edges={["top", "bottom"]}>
       {/* Header */}
-      <View className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+      <View
+        className="flex-row items-center gap-3 border-b px-4 py-3"
+        style={{ borderColor: colors.borderSoft }}
+      >
         <Pressable onPress={() => router.back()} className="p-1" hitSlop={12}>
-          <ChevronLeft size={22} color="#6366f1" />
+          <ChevronLeft size={22} color={colors.peach} />
         </Pressable>
         <View className="flex-1">
-          <Text className="text-sm font-semibold text-gray-900 dark:text-white" numberOfLines={1}>
+          <Text className="text-sm font-semibold" style={{ color: colors.fg }} numberOfLines={1}>
             {article.title}
           </Text>
           <View className="mt-0.5 flex-row items-center gap-1.5">
             <View
               className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: PROVIDER_COLORS[article.provider] }}
+              style={{ backgroundColor: providerMeta[article.provider].color }}
             />
-            <Text className="text-xs text-gray-400">{article.date}</Text>
+            <Text className="text-xs" style={{ color: colors.dim }}>
+              {article.date}
+            </Text>
           </View>
         </View>
         {article.url && (
           <Pressable onPress={handleOpenInBrowser} className="p-1" hitSlop={12}>
-            <ExternalLink size={18} color="#9ca3af" />
+            <ExternalLink size={18} color={colors.muted} />
           </Pressable>
         )}
       </View>
@@ -78,16 +77,18 @@ export default function ArticleScreen() {
         )}
 
         {/* Titre complet */}
-        <Text className="text-lg font-bold text-gray-900 dark:text-white">{article.title}</Text>
+        <Text style={{ fontFamily: "InstrumentSerif", fontSize: 24, color: colors.fg }}>
+          {article.title}
+        </Text>
 
         {/* Corps de l'article */}
         {article.content ? (
-          <Text className="text-base leading-7 text-gray-700 dark:text-gray-300">
+          <Text className="text-base leading-7" style={{ color: colors.fgSoft }}>
             {article.content}
           </Text>
         ) : (
           <View className="items-center py-10">
-            <Text className="text-sm italic text-gray-400">
+            <Text className="text-sm italic" style={{ color: colors.dim }}>
               Aucun contenu disponible.
               {article.url ? "\nOuvre dans le navigateur pour voir l'article complet." : ""}
             </Text>
@@ -96,23 +97,23 @@ export default function ArticleScreen() {
       </ScrollView>
 
       {/* Navigation précédent / suivant */}
-      <View className="flex-row border-t border-gray-100 dark:border-gray-800">
+      <View className="flex-row border-t" style={{ borderColor: colors.borderSoft }}>
         <Pressable
           onPress={() => hasPrev && open(articles, index - 1)}
           disabled={!hasPrev}
-          className="flex-1 items-center py-4 active:bg-gray-50 dark:active:bg-gray-900"
+          className="flex-1 items-center py-4"
           style={{ opacity: hasPrev ? 1 : 0.3 }}
         >
-          <ChevronUp size={22} color="#6366f1" />
+          <ChevronUp size={22} color={colors.peach} />
         </Pressable>
-        <View className="w-px bg-gray-100 dark:bg-gray-800" />
+        <View className="w-px" style={{ backgroundColor: colors.borderSoft }} />
         <Pressable
           onPress={() => hasNext && open(articles, index + 1)}
           disabled={!hasNext}
-          className="flex-1 items-center py-4 active:bg-gray-50 dark:active:bg-gray-900"
+          className="flex-1 items-center py-4"
           style={{ opacity: hasNext ? 1 : 0.3 }}
         >
-          <ChevronDown size={22} color="#6366f1" />
+          <ChevronDown size={22} color={colors.peach} />
         </Pressable>
       </View>
     </SafeAreaView>

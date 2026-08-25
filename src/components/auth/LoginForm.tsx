@@ -3,6 +3,7 @@ import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useLanguage } from "@/context/LanguageContext"
+import { colors } from "@/theme"
 
 type FormData = { email: string; password: string }
 
@@ -31,29 +32,40 @@ export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
   return (
     <View className="gap-4">
       <View className="gap-1.5">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.auth.email}</Text>
+        <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
+          {t.auth.email}
+        </Text>
         <Controller
           control={control}
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="rounded-xl border px-3.5 py-3 text-[15px]"
+              style={{
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                color: colors.fg,
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
-              placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
+              placeholder="ton@email.com"
+              placeholderTextColor={colors.dim}
             />
           )}
         />
-        {errors.email && <Text className="text-xs text-red-500">{errors.email.message}</Text>}
+        {errors.email && (
+          <Text className="text-xs" style={{ color: colors.rose }}>
+            {errors.email.message}
+          </Text>
+        )}
       </View>
 
       <View className="gap-1.5">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
           {t.auth.password}
         </Text>
         <Controller
@@ -61,35 +73,49 @@ export function LoginForm({ onSubmit, loading, error }: LoginFormProps) {
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="rounded-xl border px-3.5 py-3 text-[15px]"
+              style={{
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                color: colors.fg,
+              }}
               secureTextEntry
               autoComplete="password"
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
-              placeholder="••••••••"
-              placeholderTextColor="#9ca3af"
+              placeholder="mot de passe"
+              placeholderTextColor={colors.dim}
             />
           )}
         />
-        {errors.password && <Text className="text-xs text-red-500">{errors.password.message}</Text>}
+        {errors.password && (
+          <Text className="text-xs" style={{ color: colors.rose }}>
+            {errors.password.message}
+          </Text>
+        )}
       </View>
 
       {error && (
-        <View className="rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
-          <Text className="text-sm text-red-600 dark:text-red-400">{error}</Text>
+        <View className="rounded-xl p-3" style={{ backgroundColor: colors.roseDim }}>
+          <Text className="text-sm" style={{ color: colors.rose }}>
+            {error}
+          </Text>
         </View>
       )}
 
       <Pressable
         onPress={submit}
         disabled={loading}
-        className="items-center rounded-lg bg-indigo-600 py-3 active:opacity-80 disabled:opacity-50"
+        className="items-center rounded-xl py-3.5 active:opacity-90 disabled:opacity-50"
+        style={{ backgroundColor: colors.peach }}
       >
         {loading ? (
-          <ActivityIndicator size="small" color="white" />
+          <ActivityIndicator size="small" color={colors.peachOn} />
         ) : (
-          <Text className="font-semibold text-white">{t.auth.signIn}</Text>
+          <Text className="font-semibold" style={{ color: colors.peachOn }}>
+            {t.auth.signIn}
+          </Text>
         )}
       </Pressable>
     </View>

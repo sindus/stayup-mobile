@@ -1,28 +1,16 @@
 import { useState, useEffect } from "react"
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native"
+import { Modal, View, Text, TextInput, Pressable, ActivityIndicator } from "react-native"
 import { X } from "lucide-react-native"
 import { addUserRepository, createScrapRequest, getScrapRepos, subscribeScrap } from "@/lib/api"
 import { readApiUrl, readToken } from "@/lib/store"
 import { normalizeIdentifier, toRepositoryUrl } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
+import { colors, provider as providerMeta } from "@/theme"
 import type { Provider, ScrapRepository } from "@/types"
 
 type FeedProvider = "changelog" | "youtube" | "rss"
 
-const PROVIDERS: { value: Provider; label: string }[] = [
-  { value: "changelog", label: "GitHub Changelog" },
-  { value: "youtube", label: "YouTube" },
-  { value: "rss", label: "RSS" },
-  { value: "scrap", label: "Scraping web" },
-]
+const PROVIDERS: Provider[] = ["changelog", "youtube", "rss", "scrap"]
 
 interface AddFluxSheetProps {
   visible: boolean
@@ -141,47 +129,66 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
   const scrapLoading = provider === "scrap" && scrapRepos === null
   const availableScrapRepos = (scrapRepos ?? []).filter((r) => !r.is_subscribed)
+  const inputStyle = {
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
+    color: colors.fg,
+  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <Pressable className="flex-1 justify-end bg-black/50" onPress={handleClose}>
+      <Pressable
+        className="flex-1 justify-end"
+        style={{ backgroundColor: "rgba(8,10,16,0.72)" }}
+        onPress={handleClose}
+      >
         <Pressable
-          className="rounded-t-2xl bg-white p-6 dark:bg-gray-900"
+          className="rounded-t-[24px] p-6"
+          style={{ backgroundColor: colors.surface, paddingBottom: 34 }}
           onPress={(e) => e.stopPropagation()}
         >
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+          <View
+            className="self-center mb-4 h-1 w-10 rounded-full"
+            style={{ backgroundColor: colors.border }}
+          />
+          <View className="flex-row items-start justify-between mb-1">
+            <Text
+              style={{ fontFamily: "InstrumentSerif", fontSize: 24, color: colors.fg, flex: 1 }}
+            >
               {t.addFlux.title}
             </Text>
-            <Pressable onPress={handleClose} className="p-1">
-              <X size={20} color="#9ca3af" />
+            <Pressable onPress={handleClose} className="p-1 -mr-1 -mt-1">
+              <X size={20} color={colors.muted} />
             </Pressable>
           </View>
+          {!requestSuccess && (
+            <Text className="mb-4 text-[13px]" style={{ color: colors.muted }}>
+              {t.addFlux.description}
+            </Text>
+          )}
 
           <View className="gap-4">
             {requestSuccess ? (
               <View className="gap-2 py-2">
-                <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                <Text className="text-sm font-semibold" style={{ color: colors.fg }}>
                   {t.addFlux.requestSent}
                 </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">
+                <Text className="text-sm" style={{ color: colors.muted }}>
                   {t.addFlux.requestSentDescription}
                 </Text>
               </View>
             ) : (
               <>
-                {/* Provider selector */}
+                {/* Provider selector — 2x2 grid */}
                 <View className="gap-1.5">
-                  <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
                     {t.addFlux.provider}
                   </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="flex-row"
-                  >
-                    <View className="flex-row gap-2">
-                      {PROVIDERS.map(({ value, label }) => (
+                  <View className="flex-row flex-wrap gap-2">
+                    {PROVIDERS.map((value) => {
+                      const active = provider === value
+                      const meta = providerMeta[value]
+                      return (
                         <Pressable
                           key={value}
                           onPress={() => {
@@ -192,21 +199,23 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                             setScrapMode("select")
                             setError(null)
                           }}
-                          className={`rounded-full px-3 py-1.5 ${
-                            provider === value ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
-                          }`}
+                          className="rounded-xl px-3.5 py-2.5 border"
+                          style={{
+                            width: "47%",
+                            backgroundColor: active ? meta.dim : colors.bg,
+                            borderColor: active ? meta.color : colors.border,
+                          }}
                         >
                           <Text
-                            className={`text-sm font-medium ${
-                              provider === value ? "text-white" : "text-gray-700 dark:text-gray-300"
-                            }`}
+                            className="text-[13.5px] font-medium"
+                            style={{ color: active ? meta.color : colors.fgSoft }}
                           >
-                            {label}
+                            {meta.label}
                           </Text>
                         </Pressable>
-                      ))}
-                    </View>
-                  </ScrollView>
+                      )
+                    })}
+                  </View>
                 </View>
 
                 {/* Identifier / scrap selector */}
@@ -216,24 +225,30 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                     <View className="flex-row gap-2">
                       <Pressable
                         onPress={() => setScrapMode("select")}
-                        className={`rounded-full px-3 py-1.5 ${
-                          scrapMode === "select" ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
-                        }`}
+                        className="rounded-full px-3 py-1.5"
+                        style={{
+                          backgroundColor: scrapMode === "select" ? colors.peach : colors.bg,
+                        }}
                       >
                         <Text
-                          className={`text-xs font-medium ${scrapMode === "select" ? "text-white" : "text-gray-700 dark:text-gray-300"}`}
+                          className="text-xs font-medium"
+                          style={{ color: scrapMode === "select" ? colors.peachOn : colors.fgSoft }}
                         >
                           {t.addFlux.chooseExisting}
                         </Text>
                       </Pressable>
                       <Pressable
                         onPress={() => setScrapMode("request")}
-                        className={`rounded-full px-3 py-1.5 ${
-                          scrapMode === "request" ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
-                        }`}
+                        className="rounded-full px-3 py-1.5"
+                        style={{
+                          backgroundColor: scrapMode === "request" ? colors.peach : colors.bg,
+                        }}
                       >
                         <Text
-                          className={`text-xs font-medium ${scrapMode === "request" ? "text-white" : "text-gray-700 dark:text-gray-300"}`}
+                          className="text-xs font-medium"
+                          style={{
+                            color: scrapMode === "request" ? colors.peachOn : colors.fgSoft,
+                          }}
                         >
                           {t.addFlux.makeRequest}
                         </Text>
@@ -242,45 +257,52 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
                     {scrapMode === "select" ? (
                       <View className="gap-1.5">
-                        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
                           {t.addFlux.scrapRepo}
                         </Text>
                         {scrapLoading ? (
-                          <ActivityIndicator size="small" />
+                          <ActivityIndicator size="small" color={colors.peach} />
                         ) : availableScrapRepos.length === 0 ? (
-                          <Text className="text-sm text-gray-400">{t.addFlux.noScrapRepos}</Text>
+                          <Text className="text-sm" style={{ color: colors.dim }}>
+                            {t.addFlux.noScrapRepos}
+                          </Text>
                         ) : (
-                          availableScrapRepos.map((r) => (
-                            <Pressable
-                              key={r.id}
-                              onPress={() => setScrapRepoId(r.id)}
-                              className={`rounded-lg border p-3 ${
-                                scrapRepoId === r.id
-                                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                                  : "border-gray-200 dark:border-gray-700"
-                              }`}
-                            >
-                              <Text
-                                className="text-sm text-gray-800 dark:text-gray-200"
-                                numberOfLines={1}
+                          availableScrapRepos.map((r) => {
+                            const active = scrapRepoId === r.id
+                            return (
+                              <Pressable
+                                key={r.id}
+                                onPress={() => setScrapRepoId(r.id)}
+                                className="rounded-xl border p-3"
+                                style={{
+                                  borderColor: active ? colors.peach : colors.border,
+                                  backgroundColor: active ? colors.peachDim : "transparent",
+                                }}
                               >
-                                {r.url}
-                              </Text>
-                            </Pressable>
-                          ))
+                                <Text
+                                  className="text-sm font-mono"
+                                  style={{ color: colors.fgSoft }}
+                                  numberOfLines={1}
+                                >
+                                  {r.url}
+                                </Text>
+                              </Pressable>
+                            )
+                          })
                         )}
                       </View>
                     ) : (
                       <View className="gap-1.5">
-                        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
                           {t.addFlux.requestUrl}
                         </Text>
                         <TextInput
-                          className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                          className="rounded-xl border px-3.5 py-3"
+                          style={inputStyle}
                           value={requestUrl}
                           onChangeText={setRequestUrl}
                           placeholder={t.addFlux.requestUrlPlaceholder}
-                          placeholderTextColor="#9ca3af"
+                          placeholderTextColor={colors.dim}
                           autoCapitalize="none"
                           keyboardType="url"
                         />
@@ -289,40 +311,49 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                   </View>
                 ) : (
                   <View className="gap-1.5">
-                    <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
                       {t.addFlux.identifierLabels[provider as FeedProvider]}
                     </Text>
                     <TextInput
-                      className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                      className="rounded-xl border px-3.5 py-3"
+                      style={inputStyle}
                       value={identifier}
                       onChangeText={setIdentifier}
                       placeholder={t.addFlux.placeholders[provider as FeedProvider]}
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor={colors.dim}
                       autoCapitalize="none"
                     />
                   </View>
                 )}
 
-                {error && <Text className="text-sm text-red-500">{error}</Text>}
+                {error && (
+                  <Text className="text-sm" style={{ color: colors.rose }}>
+                    {error}
+                  </Text>
+                )}
 
                 <View className="flex-row gap-3 pt-2">
                   <Pressable
                     onPress={handleClose}
-                    className="flex-1 items-center rounded-lg border border-gray-300 py-3 dark:border-gray-700"
+                    className="flex-1 items-center rounded-xl border py-3"
+                    style={{ borderColor: colors.border }}
                   >
-                    <Text className="font-medium text-gray-700 dark:text-gray-300">
+                    <Text className="font-medium" style={{ color: colors.fgSoft }}>
                       {t.addFlux.cancel}
                     </Text>
                   </Pressable>
                   <Pressable
                     onPress={handleSubmit}
                     disabled={submitting}
-                    className="flex-1 items-center rounded-lg bg-indigo-600 py-3 disabled:opacity-50"
+                    className="flex-1 items-center rounded-xl py-3 disabled:opacity-50"
+                    style={{ backgroundColor: colors.peach }}
                   >
                     {submitting ? (
-                      <ActivityIndicator size="small" color="white" />
+                      <ActivityIndicator size="small" color={colors.peachOn} />
                     ) : (
-                      <Text className="font-semibold text-white">{t.addFlux.add}</Text>
+                      <Text className="font-semibold" style={{ color: colors.peachOn }}>
+                        {t.addFlux.add}
+                      </Text>
                     )}
                   </Pressable>
                 </View>
@@ -332,9 +363,10 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
             {requestSuccess && (
               <Pressable
                 onPress={handleClose}
-                className="items-center rounded-lg border border-gray-300 py-3 dark:border-gray-700"
+                className="items-center rounded-xl border py-3"
+                style={{ borderColor: colors.border }}
               >
-                <Text className="font-medium text-gray-700 dark:text-gray-300">
+                <Text className="font-medium" style={{ color: colors.fgSoft }}>
                   {t.addFlux.cancel}
                 </Text>
               </Pressable>

@@ -5,38 +5,56 @@ import { useAuth } from "@/hooks/useAuth"
 import { useLanguage } from "@/context/LanguageContext"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher"
+import { colors } from "@/theme"
 
 export default function ProfileScreen() {
   const { session, logout } = useAuth()
   const { t } = useLanguage()
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg" edges={["top"]}>
       <ScrollView contentContainerClassName="p-6 gap-6">
         {/* User info */}
         <View className="items-center gap-2">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
-            <Text className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+          <View
+            className="h-16 w-16 items-center justify-center rounded-full"
+            style={{ backgroundColor: colors.peach }}
+          >
+            <Text className="text-2xl font-semibold" style={{ color: colors.peachOn }}>
               {session?.name?.charAt(0).toUpperCase() ?? "?"}
             </Text>
           </View>
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+          <Text style={{ fontFamily: "InstrumentSerif", fontSize: 22, color: colors.fg }}>
             {session?.name}
           </Text>
-          <Text className="text-sm text-gray-400">{session?.email}</Text>
+          <Text className="text-sm font-mono" style={{ color: colors.muted }}>
+            {session?.email}
+          </Text>
         </View>
 
         {/* Theme */}
-        <View className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-          <Text className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <View
+          className="rounded-xl border p-4"
+          style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+        >
+          <Text
+            className="mb-3 text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: colors.muted }}
+          >
             {t.profile.theme}
           </Text>
           <ThemeToggle />
         </View>
 
         {/* Language */}
-        <View className="rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-          <Text className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <View
+          className="rounded-xl border p-4"
+          style={{ borderColor: colors.border, backgroundColor: colors.surface }}
+        >
+          <Text
+            className="mb-3 text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: colors.muted }}
+          >
             {t.profile.language}
           </Text>
           <LanguageSwitcher />
@@ -45,10 +63,13 @@ export default function ProfileScreen() {
         {/* Sign out */}
         <Pressable
           onPress={logout}
-          className="flex-row items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-4 dark:border-red-900/30 dark:bg-red-900/10 active:opacity-80"
+          className="flex-row items-center justify-center gap-2 rounded-xl border py-4 active:opacity-80"
+          style={{ borderColor: "rgba(232, 168, 181, 0.3)", backgroundColor: colors.roseDim }}
         >
-          <LogOut size={18} color="#ef4444" />
-          <Text className="font-semibold text-red-500">{t.profile.signOut}</Text>
+          <LogOut size={18} color={colors.rose} />
+          <Text className="font-semibold" style={{ color: colors.rose }}>
+            {t.profile.signOut}
+          </Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

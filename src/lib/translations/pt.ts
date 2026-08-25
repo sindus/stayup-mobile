@@ -2,7 +2,9 @@ import type { Translations } from "./en"
 
 export const pt: Translations = {
   auth: {
-    subtitle: "Entre para acessar seus feeds",
+    subtitle: "Continua de onde paraste.",
+    loginTitle: "Que bom te ver de novo.",
+    registerTitle: "Cria a tua conta.",
     email: "Email",
     password: "Senha",
     name: "Nome",
@@ -35,10 +37,10 @@ export const pt: Translations = {
     filterUnread: "Não lidos",
     markAllRead: "Marcar tudo como lido",
     providers: {
-      changelog: "GitHub Changelog",
+      changelog: "GitHub",
       youtube: "YouTube",
       rss: "RSS",
-      scrap: "Web scraping",
+      scrap: "Web",
     },
   },
   importExport: {
@@ -52,7 +54,8 @@ export const pt: Translations = {
     close: "Fechar",
   },
   addFlux: {
-    title: "Adicionar um feed",
+    title: "O que vamos seguir?",
+    description: "Escolhe uma fonte, tratamos do resto.",
     provider: "Provedor",
     identifierLabels: {
       changelog: "Repositório do GitHub",

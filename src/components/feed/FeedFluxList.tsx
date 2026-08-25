@@ -7,14 +7,8 @@ import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
 import { readToken, readApiUrl } from "@/lib/store"
 import { stripUrlScheme } from "@/lib/utils"
+import { colors, provider as providerMeta } from "@/theme"
 import type { Provider } from "@/types"
-
-const PROVIDER_COLORS: Record<Provider, string> = {
-  changelog: "#14b8a6",
-  youtube: "#f43f5e",
-  rss: "#f59e0b",
-  scrap: "#22c55e",
-}
 
 interface FeedFluxListProps {
   fluxes: FeedFlux[]
@@ -63,25 +57,25 @@ export function FeedFluxList({
   }
 
   return (
-    <View className="border-b border-gray-100 dark:border-gray-800">
+    <View className="border-b" style={{ borderColor: colors.borderSoft }}>
       {/* Header bar — toujours visible */}
       <Pressable
         onPress={() => setExpanded((v) => !v)}
         className="flex-row items-center justify-between px-4 py-2.5"
       >
         <View className="flex-row items-center gap-2">
-          <Text className="text-base font-semibold text-gray-800 dark:text-gray-200">
+          <Text className="text-base font-semibold" style={{ color: colors.fg }}>
             {t.feed.myFeeds}
           </Text>
           {/* Badge du filtre actif quand replié */}
           {!expanded && selectedProvider && (
             <View
               className="rounded-full px-2 py-0.5"
-              style={{ backgroundColor: PROVIDER_COLORS[selectedProvider] + "22" }}
+              style={{ backgroundColor: providerMeta[selectedProvider].dim }}
             >
               <Text
                 className="text-sm font-medium"
-                style={{ color: PROVIDER_COLORS[selectedProvider] }}
+                style={{ color: providerMeta[selectedProvider].color }}
               >
                 {t.feed.providers[selectedProvider]}
               </Text>
@@ -99,13 +93,13 @@ export function FeedFluxList({
             className="rounded-full p-1"
             hitSlop={8}
           >
-            <Plus size={16} color="#6366f1" />
+            <Plus size={16} color={colors.peach} />
           </Pressable>
           <ImportExportButtons fluxes={fluxes} userId={userId} onImported={onImported} />
           {expanded ? (
-            <ChevronUp size={16} color="#9ca3af" />
+            <ChevronUp size={16} color={colors.muted} />
           ) : (
-            <ChevronDown size={16} color="#9ca3af" />
+            <ChevronDown size={16} color={colors.muted} />
           )}
         </View>
       </Pressable>
@@ -121,14 +115,12 @@ export function FeedFluxList({
           >
             <Pressable
               onPress={() => onSelectProvider(null)}
-              className={`rounded-full px-3 py-1.5 ${
-                selectedProvider === null ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
-              }`}
+              className="rounded-full px-3 py-1.5"
+              style={{ backgroundColor: selectedProvider === null ? colors.peach : colors.surface }}
             >
               <Text
-                className={`text-sm font-medium ${
-                  selectedProvider === null ? "text-white" : "text-gray-700 dark:text-gray-300"
-                }`}
+                className="text-sm font-medium"
+                style={{ color: selectedProvider === null ? colors.peachOn : colors.fgSoft }}
               >
                 {t.feed.allFeeds}
               </Text>
@@ -141,28 +133,33 @@ export function FeedFluxList({
                 (sum, f) => sum + (unreadCountByRepoId[f.repository_id] ?? 0),
                 0,
               )
+              const active = selectedProvider === p
               return (
                 <Pressable
                   key={p}
-                  onPress={() => onSelectProvider(selectedProvider === p ? null : p)}
-                  className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${
-                    selectedProvider === p ? "bg-indigo-600" : "bg-gray-100 dark:bg-gray-800"
-                  }`}
+                  onPress={() => onSelectProvider(active ? null : p)}
+                  className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+                  style={{ backgroundColor: active ? providerMeta[p].dim : colors.surface }}
                 >
                   <View
                     className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: PROVIDER_COLORS[p] }}
+                    style={{ backgroundColor: providerMeta[p].color }}
                   />
                   <Text
-                    className={`text-base font-medium ${
-                      selectedProvider === p ? "text-white" : "text-gray-700 dark:text-gray-300"
-                    }`}
+                    className="text-base font-medium"
+                    style={{ color: active ? providerMeta[p].color : colors.fgSoft }}
                   >
                     {t.feed.providers[p]}
                   </Text>
                   {providerUnread > 0 && (
-                    <View className="rounded-full bg-teal-500 px-1.5 py-0.5">
-                      <Text className="text-xs font-mono font-semibold text-white">
+                    <View
+                      className="rounded-full px-1.5 py-0.5"
+                      style={{ backgroundColor: colors.peach }}
+                    >
+                      <Text
+                        className="text-xs font-mono font-semibold"
+                        style={{ color: colors.peachOn }}
+                      >
                         {providerUnread}
                       </Text>
                     </View>
@@ -186,23 +183,31 @@ export function FeedFluxList({
                   return (
                     <View
                       key={flux.id}
-                      className="flex-row items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-800"
+                      className="flex-row items-center gap-1 rounded-lg border px-2 py-1"
+                      style={{ borderColor: colors.border, backgroundColor: colors.surface }}
                     >
                       <Text
-                        className="max-w-[140px] text-sm text-gray-700 dark:text-gray-300"
+                        className="max-w-[140px] text-sm font-mono"
+                        style={{ color: colors.fgSoft }}
                         numberOfLines={1}
                       >
                         {stripUrlScheme(flux.identifier)}
                       </Text>
                       {fluxUnread > 0 && (
-                        <View className="rounded-full bg-teal-500 px-1 py-0.5">
-                          <Text className="text-xs font-mono font-semibold text-white">
+                        <View
+                          className="rounded-full px-1 py-0.5"
+                          style={{ backgroundColor: colors.peach }}
+                        >
+                          <Text
+                            className="text-xs font-mono font-semibold"
+                            style={{ color: colors.peachOn }}
+                          >
                             {fluxUnread}
                           </Text>
                         </View>
                       )}
                       <Pressable onPress={() => handleDelete(flux)} className="ml-1 p-0.5">
-                        <Trash2 size={12} color="#9ca3af" />
+                        <Trash2 size={12} color={colors.muted} />
                       </Pressable>
                     </View>
                   )
