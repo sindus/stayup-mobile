@@ -3,6 +3,7 @@ import { Rss, User } from "lucide-react-native"
 import { useAuth } from "@/hooks/useAuth"
 import { useLanguage } from "@/context/LanguageContext"
 import { View, ActivityIndicator } from "react-native"
+import { colors } from "@/theme"
 
 export default function AppLayout() {
   const { session, loading } = useAuth()
@@ -10,8 +11,8 @@ export default function AppLayout() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-950">
-        <ActivityIndicator size="large" />
+      <View className="flex-1 items-center justify-center bg-bg">
+        <ActivityIndicator size="large" color={colors.peach} />
       </View>
     )
   }
@@ -24,11 +25,12 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#6366f1",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: colors.peach,
+        tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
+          backgroundColor: colors.bgSoft,
           borderTopWidth: 1,
-          borderTopColor: "#e5e7eb",
+          borderTopColor: colors.borderSoft,
         },
       }}
     >

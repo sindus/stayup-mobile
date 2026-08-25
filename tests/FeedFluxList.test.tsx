@@ -60,7 +60,7 @@ describe("FeedFluxList", () => {
 
     await waitFor(() => expect(screen.getByText("Mes flux")).toBeTruthy())
     expect(screen.getByText("Tous les flux")).toBeTruthy()
-    expect(screen.getByText("GitHub Changelog")).toBeTruthy()
+    expect(screen.getByText("GitHub")).toBeTruthy()
     expect(screen.getByText("YouTube")).toBeTruthy()
     expect(screen.queryByText("RSS")).toBeNull()
     expect(screen.queryByText("Scraping web")).toBeNull()

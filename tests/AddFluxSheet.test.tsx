@@ -45,10 +45,10 @@ describe("AddFluxSheet — providers", () => {
   it("lists the four feed providers and no longer offers Documentation", async () => {
     setup()
 
-    await waitFor(() => expect(screen.getByText("GitHub Changelog")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("GitHub")).toBeTruthy())
     expect(screen.getByText("YouTube")).toBeTruthy()
     expect(screen.getByText("RSS")).toBeTruthy()
-    expect(screen.getByText("Scraping web")).toBeTruthy()
+    expect(screen.getByText("Web")).toBeTruthy()
     expect(screen.queryByText("Documentation")).toBeNull()
   })
 
@@ -166,7 +166,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
   it("lists only the repos that are not already subscribed", async () => {
     mockedGetScrapRepos.mockResolvedValue(repos)
     setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
     expect(screen.queryByText("https://b.example.com")).toBeNull()
@@ -175,7 +175,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
   it("shows the empty state when nothing is available", async () => {
     mockedGetScrapRepos.mockResolvedValue([])
     setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
   })
@@ -183,7 +183,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
   it("falls back to an empty list when the fetch fails", async () => {
     mockedGetScrapRepos.mockRejectedValue(new Error("500"))
     setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
   })
@@ -191,7 +191,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
   it("falls back to an empty list when there is no token", async () => {
     secureStore.getItemAsync.mockResolvedValue(null)
     setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
     expect(mockedGetScrapRepos).not.toHaveBeenCalled()
@@ -200,7 +200,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
   it("requires a selection before subscribing", async () => {
     mockedGetScrapRepos.mockResolvedValue(repos)
     setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
     await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
 
     fireEvent.press(screen.getByText("Ajouter"))
@@ -213,7 +213,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
     mockedGetScrapRepos.mockResolvedValue(repos)
     mockedSubscribe.mockResolvedValue(undefined)
     const { onSuccess } = setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
     await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
 
     fireEvent.press(screen.getByText("https://a.example.com"))
@@ -226,7 +226,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
 
 describe("AddFluxSheet — demande de scraping", () => {
   function openRequestMode() {
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
     fireEvent.press(screen.getByText("Faire une demande"))
   }
 
@@ -361,7 +361,7 @@ describe("AddFluxSheet — fermeture", () => {
   it("closes from the confirmation screen", async () => {
     mockedCreateRequest.mockResolvedValue({ id: "req-1" })
     const { onClose } = setup()
-    fireEvent.press(screen.getByText("Scraping web"))
+    fireEvent.press(screen.getByText("Web"))
     fireEvent.press(screen.getByText("Faire une demande"))
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 

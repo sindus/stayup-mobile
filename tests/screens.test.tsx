@@ -100,8 +100,8 @@ describe("LoginScreen", () => {
   it("shows the title and the subtitle", async () => {
     renderWithProviders(<LoginScreen />)
 
-    await waitFor(() => expect(screen.getByText("StayUp")).toBeTruthy())
-    expect(screen.getByText("Connectez-vous pour accéder à vos flux")).toBeTruthy()
+    await waitFor(() => expect(screen.getByText("Content de te revoir.")).toBeTruthy())
+    expect(screen.getByText("Reprends ta lecture là où tu l'avais laissée.")).toBeTruthy()
     expect(screen.getByText("ou")).toBeTruthy()
     expect(screen.getByText("Pas encore de compte ?")).toBeTruthy()
   })
@@ -137,21 +137,20 @@ describe("RegisterScreen", () => {
   it("shows the title and the link back to login", async () => {
     renderWithProviders(<RegisterScreen />)
 
-    await waitFor(() => expect(screen.getByText("StayUp")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("Crée ton compte.")).toBeTruthy())
     expect(screen.getByText("Déjà un compte ?")).toBeTruthy()
   })
 
   it("registers through the form", async () => {
     mockedRegister.mockResolvedValue(validToken())
     renderWithProviders(<RegisterScreen />)
-    // « Créer un compte » est à la fois le sous-titre et le libellé du bouton.
-    await waitFor(() => expect(screen.getAllByText("Créer un compte")).toHaveLength(2))
+    await waitFor(() => expect(screen.getByText("Créer un compte")).toBeTruthy())
 
     const fields = screen.UNSAFE_getAllByType(TextInput)
     fireEvent.changeText(fields[0], "Jean")
     fireEvent.changeText(fields[1], "jean@example.com")
     fireEvent.changeText(fields[2], "password123")
-    fireEvent.press(screen.getAllByText("Créer un compte")[1])
+    fireEvent.press(screen.getByText("Créer un compte"))
 
     await waitFor(() =>
       expect(mockedRegister).toHaveBeenCalledWith(
@@ -216,12 +215,12 @@ describe("Écrans d'auth sur Android", () => {
 
   it("LoginScreen renders with the Android keyboard behaviour", async () => {
     renderWithProviders(<LoginScreen />)
-    await waitFor(() => expect(screen.getByText("StayUp")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("Content de te revoir.")).toBeTruthy())
   })
 
   it("RegisterScreen renders with the Android keyboard behaviour", async () => {
     renderWithProviders(<RegisterScreen />)
-    await waitFor(() => expect(screen.getByText("StayUp")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("Crée ton compte.")).toBeTruthy())
   })
 })
 

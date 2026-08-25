@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { View, Pressable, Alert, ActivityIndicator } from "react-native"
 import { Download, Upload } from "lucide-react-native"
+import { colors } from "@/theme"
 import * as DocumentPicker from "expo-document-picker"
 import * as Sharing from "expo-sharing"
 import { File, Paths } from "expo-file-system"
@@ -133,7 +134,7 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
         hitSlop={8}
         accessibilityLabel={t.importExport.export}
       >
-        <Download size={16} color="#6366f1" />
+        <Download size={16} color={colors.peach} />
       </Pressable>
       <Pressable
         onPress={(e) => {
@@ -146,9 +147,9 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
         accessibilityLabel={t.importExport.import}
       >
         {importing ? (
-          <ActivityIndicator size="small" color="#6366f1" />
+          <ActivityIndicator size="small" color={colors.peach} />
         ) : (
-          <Upload size={16} color="#6366f1" />
+          <Upload size={16} color={colors.peach} />
         )}
       </Pressable>
     </View>
