@@ -1,6 +1,7 @@
 import { Platform, TextInput } from "react-native"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native"
 import * as SecureStore from "expo-secure-store"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import Index from "../app/index"
 import RootLayout from "../app/_layout"
 import AuthLayout from "../app/(auth)/_layout"
@@ -23,6 +24,11 @@ const secureStore = SecureStore as unknown as {
   getItemAsync: jest.Mock
   deleteItemAsync: jest.Mock
 }
+const asyncStorage = AsyncStorage as unknown as {
+  getItem: jest.Mock
+  setItem: jest.Mock
+  removeItem: jest.Mock
+}
 const mockedLogin = loginWithPassword as jest.Mock
 const mockedRegister = registerWithPassword as jest.Mock
 
@@ -39,6 +45,7 @@ function validToken(): string {
 
 beforeEach(() => {
   secureStore.getItemAsync.mockResolvedValue(null)
+  asyncStorage.getItem.mockResolvedValue(null)
 })
 
 describe("Index", () => {
@@ -191,7 +198,44 @@ describe("ProfileScreen", () => {
   it("exposes the API URL section prefilled with the default url", async () => {
     renderWithProviders(<ProfileScreen />)
 
-    await waitFor(() => expect(screen.getByDisplayValue("https://stayup-api.r-sik.workers.dev")).toBeTruthy())
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("https://stayup-api.r-sik.workers.dev")).toBeTruthy(),
+    )
+  })
+
+  it("saves a trimmed API URL", async () => {
+    renderWithProviders(<ProfileScreen />)
+    const input = await screen.findByDisplayValue("https://stayup-api.r-sik.workers.dev")
+
+    fireEvent.changeText(input, "  https://my-api.example.com/  ")
+    fireEvent.press(screen.getByText("Enregistrer"))
+
+    await waitFor(() =>
+      expect(asyncStorage.setItem).toHaveBeenCalledWith("api_url", "https://my-api.example.com"),
+    )
+    expect(screen.getByText("URL de l'API mise à jour.")).toBeTruthy()
+  })
+
+  it("rejects a malformed API URL without storing it", async () => {
+    renderWithProviders(<ProfileScreen />)
+    const input = await screen.findByDisplayValue("https://stayup-api.r-sik.workers.dev")
+
+    fireEvent.changeText(input, "pas-une-url")
+    fireEvent.press(screen.getByText("Enregistrer"))
+
+    await waitFor(() => expect(screen.getByText("Saisis une URL valide.")).toBeTruthy())
+    expect(asyncStorage.setItem).not.toHaveBeenCalledWith("api_url", expect.anything())
+  })
+
+  it("resets the API URL back to the default", async () => {
+    asyncStorage.getItem.mockResolvedValueOnce("https://my-api.example.com")
+    renderWithProviders(<ProfileScreen />)
+    await screen.findByDisplayValue("https://my-api.example.com")
+
+    fireEvent.press(screen.getByText("Réinitialiser par défaut"))
+
+    await waitFor(() => expect(asyncStorage.removeItem).toHaveBeenCalledWith("api_url"))
+    expect(screen.getByDisplayValue("https://stayup-api.r-sik.workers.dev")).toBeTruthy()
   })
 
   it("signs the user out", async () => {

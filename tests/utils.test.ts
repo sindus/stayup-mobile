@@ -9,6 +9,7 @@ import {
   stripMarkdown,
   stripHtml,
   openUrl,
+  providerDisplayName,
 } from "../src/lib/utils"
 import type { Provider } from "../src/types"
 
@@ -174,5 +175,19 @@ describe("openUrl", () => {
   it("delegates to Linking.openURL", async () => {
     await openUrl("https://example.com")
     expect(Linking.openURL).toHaveBeenCalledWith("https://example.com")
+  })
+})
+
+describe("providerDisplayName", () => {
+  it("capitalizes the provider name", () => {
+    expect(providerDisplayName("podcast")).toBe("Podcast")
+  })
+
+  it("leaves an already capitalized name untouched", () => {
+    expect(providerDisplayName("RSS")).toBe("RSS")
+  })
+
+  it("returns an empty string for an empty provider", () => {
+    expect(providerDisplayName("")).toBe("")
   })
 })

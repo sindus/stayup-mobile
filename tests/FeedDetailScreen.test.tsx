@@ -79,6 +79,23 @@ function scrapTagged(params: unknown, content = "Contenu scrapé"): TaggedItem {
   }
 }
 
+function genericTagged(
+  overrides: Partial<{ content: string; version: string | null; datetime: string | null }> = {},
+): TaggedItem {
+  return {
+    provider: "podcast",
+    item: {
+      id: 5,
+      repository_id: 14,
+      content: "Corps générique",
+      version: "s02e04",
+      datetime: "2026-04-01T10:00:00Z",
+      executed_at: "2026-04-01T11:00:00Z",
+      ...overrides,
+    },
+  }
+}
+
 beforeEach(() => {
   stubStorage()
   openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true)
@@ -413,5 +430,32 @@ describe("FeedDetailScreen — scraping", () => {
 
     fireEvent.press(screen.getByText("Visiter le site"))
     expect(openURL).toHaveBeenCalledWith("https://example.com/blog")
+  })
+})
+
+describe("FeedDetailScreen — provider inconnu", () => {
+  it("renders the generic detail with the capitalized provider label", async () => {
+    select(genericTagged())
+    renderWithProviders(<FeedDetailScreen />)
+
+    await waitFor(() => expect(screen.getAllByText("Podcast")).toHaveLength(2))
+    expect(screen.getByText("s02e04")).toBeTruthy()
+    expect(screen.getByText("Corps générique")).toBeTruthy()
+  })
+
+  it("omits the version and the body when the item carries neither", async () => {
+    select(genericTagged({ content: "", version: null }))
+    renderWithProviders(<FeedDetailScreen />)
+
+    await waitFor(() => expect(screen.getAllByText("Podcast")).toHaveLength(2))
+    expect(screen.queryByText("s02e04")).toBeNull()
+    expect(screen.queryByText("Corps générique")).toBeNull()
+  })
+
+  it("falls back to executed_at when the item has no datetime", async () => {
+    select(genericTagged({ datetime: null }))
+    renderWithProviders(<FeedDetailScreen />)
+
+    await waitFor(() => expect(screen.getAllByText("Podcast")).toHaveLength(2))
   })
 })
