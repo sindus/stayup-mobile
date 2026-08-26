@@ -54,8 +54,8 @@ export default function FeedScreen() {
 
   const allTaggedItems = useMemo<TaggedItem[]>(
     () =>
-      Object.entries(c).flatMap(
-        ([provider, items]) => items.map((item) => ({ provider, item }) as TaggedItem),
+      Object.entries(c).flatMap(([provider, items]) =>
+        items.map((item) => ({ provider, item }) as TaggedItem),
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [connectors],
@@ -112,7 +112,8 @@ export default function FeedScreen() {
   const filteredItems =
     filterMode === "unread"
       ? providerFilteredItems.filter(
-          (tagged) => !readIds.has(getTaggedItemId(tagged)) || getTaggedItemId(tagged) === openItemId,
+          (tagged) =>
+            !readIds.has(getTaggedItemId(tagged)) || getTaggedItemId(tagged) === openItemId,
         )
       : providerFilteredItems
 

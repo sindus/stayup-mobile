@@ -306,9 +306,17 @@ function GenericEntry({
   providerLabel: string
 }) {
   return (
-    <Pressable onPress={onPress} className="border-l-2 pl-3 py-1" style={{ borderColor: colors.dim }}>
+    <Pressable
+      onPress={onPress}
+      className="border-l-2 pl-3 py-1"
+      style={{ borderColor: colors.dim }}
+    >
       <View className="mb-1 flex-row items-center justify-between gap-2">
-        <Text className="flex-1 text-base font-medium" style={{ color: colors.fg }} numberOfLines={1}>
+        <Text
+          className="flex-1 text-base font-medium"
+          style={{ color: colors.fg }}
+          numberOfLines={1}
+        >
           {item.content?.slice(0, 80) || providerLabel}
         </Text>
         <Text className="text-sm font-mono" style={{ color: colors.dim }}>

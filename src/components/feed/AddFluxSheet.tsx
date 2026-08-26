@@ -166,7 +166,8 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
   const scrapLoading = provider === "scrap" && scrapRepos === null
   const availableScrapRepos = (scrapRepos ?? []).filter((r) => !r.is_subscribed)
-  const isKnownFeedProvider = provider === "changelog" || provider === "youtube" || provider === "rss"
+  const isKnownFeedProvider =
+    provider === "changelog" || provider === "youtube" || provider === "rss"
   const inputStyle = {
     borderColor: colors.border,
     backgroundColor: colors.bg,

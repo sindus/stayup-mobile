@@ -183,7 +183,9 @@ describe("YoutubeEntry", () => {
   it("derives the channel from the last path segment", () => {
     renderWithProviders(
       <UnifiedFeedList
-        items={[tag("youtube", youtube({ title: "V", url: "https://www.youtube.com/channel/UC123" }))]}
+        items={[
+          tag("youtube", youtube({ title: "V", url: "https://www.youtube.com/channel/UC123" })),
+        ]}
       />,
     )
     expect(screen.getByText("UC123")).toBeTruthy()
@@ -398,7 +400,9 @@ describe("UnifiedFeedList — dates de repli", () => {
 
   it("keeps a youtube channel url with a trailing slash", () => {
     renderWithProviders(
-      <UnifiedFeedList items={[tag("youtube", youtube({ title: "V", url: "https://youtube.com/" }))]} />,
+      <UnifiedFeedList
+        items={[tag("youtube", youtube({ title: "V", url: "https://youtube.com/" }))]}
+      />,
     )
     expect(screen.getByText("V")).toBeTruthy()
   })
