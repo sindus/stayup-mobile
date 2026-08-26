@@ -1,7 +1,7 @@
 import { Linking, RefreshControl, View } from "react-native"
 import { screen, fireEvent, waitFor } from "@testing-library/react-native"
 import { UnifiedFeedList } from "@/components/feed/UnifiedFeedList"
-import type { ChangelogItem, RssItem, ScrapItem, YoutubeItem } from "@/types"
+import type { ChangelogItem, RssItem, ScrapItem, TaggedItem, YoutubeItem } from "@/types"
 import { renderWithProviders } from "./render"
 
 let openURL: jest.SpyInstance
@@ -64,16 +64,18 @@ function scrap(params: ScrapItem["params"], overrides: Partial<ScrapItem> = {}):
   }
 }
 
-const empty = { changelog: [], youtube: [], rss: [], scrap: [] }
+function tag(provider: string, item: unknown): TaggedItem {
+  return { provider, item } as TaggedItem
+}
 
 describe("UnifiedFeedList — état vide", () => {
   it("shows the empty message when there is nothing to display", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} />)
+    renderWithProviders(<UnifiedFeedList items={[]} />)
     expect(screen.getByText("Aucun contenu disponible.")).toBeTruthy()
   })
 
   it("does not show the empty message while loading", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} loading />)
+    renderWithProviders(<UnifiedFeedList items={[]} loading />)
     expect(screen.queryByText("Aucun contenu disponible.")).toBeNull()
   })
 })
@@ -82,10 +84,15 @@ describe("UnifiedFeedList — tri", () => {
   it("orders every provider together, newest first", () => {
     renderWithProviders(
       <UnifiedFeedList
-        changelog={[changelog()]}
-        youtube={[youtube({ title: "Vidéo" })]}
-        rss={[rss({ title: "Article", link: "https://blog.example.com/a" })]}
-        scrap={[scrap({ url: "https://example.com", articles_selector: "", content_selector: "" })]}
+        items={[
+          tag("changelog", changelog()),
+          tag("youtube", youtube({ title: "Vidéo" })),
+          tag("rss", rss({ title: "Article", link: "https://blog.example.com/a" })),
+          tag(
+            "scrap",
+            scrap({ url: "https://example.com", articles_selector: "", content_selector: "" }),
+          ),
+        ]}
         repositories={[{ repository_id: 10, url: "https://github.com/facebook/react" }]}
       />,
     )
@@ -99,8 +106,7 @@ describe("ChangelogEntry", () => {
   it("shows the repo name, version and stripped content", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        changelog={[changelog()]}
+        items={[tag("changelog", changelog())]}
         repositories={[{ repository_id: 10, url: "https://github.com/facebook/react" }]}
       />,
     )
@@ -111,14 +117,14 @@ describe("ChangelogEntry", () => {
   })
 
   it("falls back to the repository label when the repository url is unknown", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} changelog={[changelog()]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("changelog", changelog())]} />)
 
     expect(screen.getByText("dépôt")).toBeTruthy()
     expect(screen.getByText("v1.2.3")).toBeTruthy()
   })
 
   it("does not open a release page when the repository url is unknown", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} changelog={[changelog()]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("changelog", changelog())]} />)
 
     fireEvent.press(screen.getByText("v1.2.3"))
     expect(openURL).not.toHaveBeenCalled()
@@ -127,8 +133,7 @@ describe("ChangelogEntry", () => {
   it("opens the release page when no press handler is given", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        changelog={[changelog()]}
+        items={[tag("changelog", changelog())]}
         repositories={[{ repository_id: 10, url: "https://github.com/facebook/react" }]}
       />,
     )
@@ -140,7 +145,7 @@ describe("ChangelogEntry", () => {
   it("prefers the press handler over opening the browser", () => {
     const onPressItem = jest.fn()
     renderWithProviders(
-      <UnifiedFeedList {...empty} changelog={[changelog()]} onPressItem={onPressItem} />,
+      <UnifiedFeedList items={[tag("changelog", changelog())]} onPressItem={onPressItem} />,
     )
 
     fireEvent.press(screen.getByText("v1.2.3"))
@@ -149,7 +154,7 @@ describe("ChangelogEntry", () => {
   })
 
   it("hides the content block when the changelog is empty", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} changelog={[changelog({ content: "" })]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("changelog", changelog({ content: "" }))]} />)
     expect(screen.queryByText("Titre Corps du changelog")).toBeNull()
   })
 })
@@ -158,13 +163,15 @@ describe("YoutubeEntry", () => {
   it("shows the title and channel handle", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        youtube={[
-          youtube({
-            title: "Nouvelle vidéo",
-            url: "https://www.youtube.com/@fireship",
-            thumbnail: "https://img.example.com/t.jpg",
-          }),
+        items={[
+          tag(
+            "youtube",
+            youtube({
+              title: "Nouvelle vidéo",
+              url: "https://www.youtube.com/@fireship",
+              thumbnail: "https://img.example.com/t.jpg",
+            }),
+          ),
         ]}
       />,
     )
@@ -176,8 +183,7 @@ describe("YoutubeEntry", () => {
   it("derives the channel from the last path segment", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        youtube={[youtube({ title: "V", url: "https://www.youtube.com/channel/UC123" })]}
+        items={[tag("youtube", youtube({ title: "V", url: "https://www.youtube.com/channel/UC123" }))]}
       />,
     )
     expect(screen.getByText("UC123")).toBeTruthy()
@@ -185,31 +191,33 @@ describe("YoutubeEntry", () => {
 
   it("keeps a malformed channel url as-is", () => {
     renderWithProviders(
-      <UnifiedFeedList {...empty} youtube={[youtube({ title: "V", url: "pas-une-url" })]} />,
+      <UnifiedFeedList items={[tag("youtube", youtube({ title: "V", url: "pas-une-url" }))]} />,
     )
     expect(screen.getByText("pas-une-url")).toBeTruthy()
   })
 
   it("shows a placeholder when there is no thumbnail", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} youtube={[youtube({ title: "V" })]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("youtube", youtube({ title: "V" }))]} />)
     expect(screen.getByText("▶")).toBeTruthy()
   })
 
   it("falls back to the no-title label when the payload is malformed", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} youtube={[youtube("{cassé")]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("youtube", youtube("{cassé"))]} />)
     expect(screen.getByText("Sans titre")).toBeTruthy()
   })
 
   it("opens link in priority over url", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        youtube={[
-          youtube({
-            title: "V",
-            url: "https://www.youtube.com/@a",
-            link: "https://youtu.be/xyz",
-          }),
+        items={[
+          tag(
+            "youtube",
+            youtube({
+              title: "V",
+              url: "https://www.youtube.com/@a",
+              link: "https://youtu.be/xyz",
+            }),
+          ),
         ]}
       />,
     )
@@ -221,8 +229,7 @@ describe("YoutubeEntry", () => {
   it("opens url when link is absent", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        youtube={[youtube({ title: "V", url: "https://www.youtube.com/@a" })]}
+        items={[tag("youtube", youtube({ title: "V", url: "https://www.youtube.com/@a" }))]}
       />,
     )
 
@@ -235,13 +242,15 @@ describe("RssEntry", () => {
   it("shows the title, source host and summary", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        rss={[
-          rss({
-            title: "Mon article",
-            link: "https://www.blog.example.com/a",
-            summary: "Un résumé",
-          }),
+        items={[
+          tag(
+            "rss",
+            rss({
+              title: "Mon article",
+              link: "https://www.blog.example.com/a",
+              summary: "Un résumé",
+            }),
+          ),
         ]}
       />,
     )
@@ -253,19 +262,19 @@ describe("RssEntry", () => {
 
   it("keeps a malformed link as the source label", () => {
     renderWithProviders(
-      <UnifiedFeedList {...empty} rss={[rss({ title: "A", link: "pas-une-url" })]} />,
+      <UnifiedFeedList items={[tag("rss", rss({ title: "A", link: "pas-une-url" }))]} />,
     )
     expect(screen.getByText("pas-une-url")).toBeTruthy()
   })
 
   it("falls back to the no-title label when the payload is malformed", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} rss={[rss("{cassé")]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("rss", rss("{cassé"))]} />)
     expect(screen.getByText("Sans titre")).toBeTruthy()
   })
 
   it("opens the article link", () => {
     renderWithProviders(
-      <UnifiedFeedList {...empty} rss={[rss({ title: "A", link: "https://example.com/a" })]} />,
+      <UnifiedFeedList items={[tag("rss", rss({ title: "A", link: "https://example.com/a" }))]} />,
     )
 
     fireEvent.press(screen.getByText("A"))
@@ -277,13 +286,15 @@ describe("ScrapEntry", () => {
   it("shows the scraped url and content", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        scrap={[
-          scrap({
-            url: "https://example.com/blog",
-            articles_selector: "a",
-            content_selector: "p",
-          }),
+        items={[
+          tag(
+            "scrap",
+            scrap({
+              url: "https://example.com/blog",
+              articles_selector: "a",
+              content_selector: "p",
+            }),
+          ),
         ]}
       />,
     )
@@ -295,21 +306,22 @@ describe("ScrapEntry", () => {
   it("parses params provided as a JSON string", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        scrap={[scrap(JSON.stringify({ url: "https://example.com/x" }))]}
+        items={[tag("scrap", scrap(JSON.stringify({ url: "https://example.com/x" })))]}
       />,
     )
     expect(screen.getByText("https://example.com/x")).toBeTruthy()
   })
 
   it("tolerates malformed params", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} scrap={[scrap("{cassé")]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("scrap", scrap("{cassé"))]} />)
     expect(screen.getByText("Contenu scrapé")).toBeTruthy()
   })
 
   it("hides the content block when empty", () => {
     renderWithProviders(
-      <UnifiedFeedList {...empty} scrap={[scrap(JSON.stringify({ url: "u" }), { content: "" })]} />,
+      <UnifiedFeedList
+        items={[tag("scrap", scrap(JSON.stringify({ url: "u" }), { content: "" }))]}
+      />,
     )
     expect(screen.queryByText("Contenu scrapé")).toBeNull()
   })
@@ -317,13 +329,32 @@ describe("ScrapEntry", () => {
   it("opens the scraped url", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        scrap={[scrap(JSON.stringify({ url: "https://example.com/x" }))]}
+        items={[tag("scrap", scrap(JSON.stringify({ url: "https://example.com/x" })))]}
       />,
     )
 
     fireEvent.press(screen.getByText("https://example.com/x"))
     expect(openURL).toHaveBeenCalledWith("https://example.com/x")
+  })
+})
+
+describe("GenericEntry — provider inconnu de l'app", () => {
+  it("shows the provider label, content excerpt and date", () => {
+    renderWithProviders(
+      <UnifiedFeedList
+        items={[
+          tag("podcast", {
+            id: 5,
+            repository_id: 14,
+            content: "Épisode du jour",
+            executed_at: "2026-04-01T11:00:00Z",
+          }),
+        ]}
+      />,
+    )
+
+    expect(screen.getByText("Épisode du jour")).toBeTruthy()
+    expect(screen.getByText("Podcast")).toBeTruthy()
   })
 })
 
@@ -339,10 +370,11 @@ describe("UnifiedFeedList — dates de repli", () => {
   it("falls back to executed_at when datetime is null", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        changelog={[changelog({ datetime: null })]}
-        youtube={[youtube({ title: "V" }, { datetime: null })]}
-        rss={[rss({ title: "A" }, { datetime: null })]}
+        items={[
+          tag("changelog", changelog({ datetime: null })),
+          tag("youtube", youtube({ title: "V" }, { datetime: null })),
+          tag("rss", rss({ title: "A" }, { datetime: null })),
+        ]}
       />,
     )
 
@@ -354,9 +386,10 @@ describe("UnifiedFeedList — dates de repli", () => {
   it("falls back to the no-title label when the payload has no title", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        youtube={[youtube({ url: "https://www.youtube.com/@a" })]}
-        rss={[rss({ link: "https://example.com/a" })]}
+        items={[
+          tag("youtube", youtube({ url: "https://www.youtube.com/@a" })),
+          tag("rss", rss({ link: "https://example.com/a" })),
+        ]}
       />,
     )
 
@@ -365,10 +398,7 @@ describe("UnifiedFeedList — dates de repli", () => {
 
   it("keeps a youtube channel url with a trailing slash", () => {
     renderWithProviders(
-      <UnifiedFeedList
-        {...empty}
-        youtube={[youtube({ title: "V", url: "https://youtube.com/" })]}
-      />,
+      <UnifiedFeedList items={[tag("youtube", youtube({ title: "V", url: "https://youtube.com/" }))]} />,
     )
     expect(screen.getByText("V")).toBeTruthy()
   })
@@ -377,21 +407,20 @@ describe("UnifiedFeedList — dates de repli", () => {
 describe("UnifiedFeedList — lecture et rafraîchissement", () => {
   it("dims an item that has been read", () => {
     renderWithProviders(
-      <UnifiedFeedList {...empty} rss={[rss({ title: "A" })]} readIds={new Set(["rss:3"])} />,
+      <UnifiedFeedList items={[tag("rss", rss({ title: "A" }))]} readIds={new Set(["rss:3"])} />,
     )
     expect(itemOpacities()).toContain(0.45)
   })
 
   it("keeps an unread item at full opacity", () => {
-    renderWithProviders(<UnifiedFeedList {...empty} rss={[rss({ title: "A" })]} />)
+    renderWithProviders(<UnifiedFeedList items={[tag("rss", rss({ title: "A" }))]} />)
     expect(itemOpacities()).toContain(1)
   })
 
   it("keeps the currently open item at full opacity even once read", () => {
     renderWithProviders(
       <UnifiedFeedList
-        {...empty}
-        rss={[rss({ title: "A" })]}
+        items={[tag("rss", rss({ title: "A" }))]}
         readIds={new Set(["rss:3"])}
         openItemId="rss:3"
       />,
@@ -403,7 +432,7 @@ describe("UnifiedFeedList — lecture et rafraîchissement", () => {
   it("exposes a pull-to-refresh control", async () => {
     const onRefresh = jest.fn()
     renderWithProviders(
-      <UnifiedFeedList {...empty} rss={[rss({ title: "A" })]} onRefresh={onRefresh} />,
+      <UnifiedFeedList items={[tag("rss", rss({ title: "A" }))]} onRefresh={onRefresh} />,
     )
 
     fireEvent(screen.UNSAFE_getByType(RefreshControl), "refresh")

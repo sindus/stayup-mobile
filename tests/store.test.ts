@@ -5,6 +5,8 @@ import {
   writeToken,
   clearToken,
   readApiUrl,
+  writeApiUrl,
+  resetApiUrl,
   readLang,
   writeLang,
   readReadItems,
@@ -16,7 +18,11 @@ const secureStore = SecureStore as unknown as {
   setItemAsync: jest.Mock
   deleteItemAsync: jest.Mock
 }
-const asyncStorage = AsyncStorage as unknown as { getItem: jest.Mock; setItem: jest.Mock }
+const asyncStorage = AsyncStorage as unknown as {
+  getItem: jest.Mock
+  setItem: jest.Mock
+  removeItem: jest.Mock
+}
 
 afterEach(() => jest.clearAllMocks())
 
@@ -43,9 +49,25 @@ describe("token storage", () => {
   })
 })
 
-describe("readApiUrl", () => {
-  it("returns the StayUp API base url", async () => {
+describe("API URL storage", () => {
+  it("falls back to the default StayUp API base url when nothing is stored", async () => {
+    asyncStorage.getItem.mockResolvedValueOnce(null)
     await expect(readApiUrl()).resolves.toBe("https://stayup-api.r-sik.workers.dev")
+  })
+
+  it("returns the stored override", async () => {
+    asyncStorage.getItem.mockResolvedValueOnce("https://custom-api.example.com")
+    await expect(readApiUrl()).resolves.toBe("https://custom-api.example.com")
+  })
+
+  it("writes the override", async () => {
+    await writeApiUrl("https://custom-api.example.com")
+    expect(asyncStorage.setItem).toHaveBeenCalledWith("api_url", "https://custom-api.example.com")
+  })
+
+  it("clears the override on reset", async () => {
+    await resetApiUrl()
+    expect(asyncStorage.removeItem).toHaveBeenCalledWith("api_url")
   })
 })
 

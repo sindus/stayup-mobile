@@ -188,6 +188,12 @@ describe("ProfileScreen", () => {
     expect(screen.getByText("🇫🇷 Français")).toBeTruthy()
   })
 
+  it("exposes the API URL section prefilled with the default url", async () => {
+    renderWithProviders(<ProfileScreen />)
+
+    await waitFor(() => expect(screen.getByDisplayValue("https://stayup-api.r-sik.workers.dev")).toBeTruthy())
+  })
+
   it("signs the user out", async () => {
     secureStore.getItemAsync.mockResolvedValue(validToken())
     renderWithProviders(<ProfileScreen />)

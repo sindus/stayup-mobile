@@ -8,9 +8,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { useReadItemsStore } from "@/store/readItems"
 import { useLanguage } from "@/context/LanguageContext"
-import { formatDate, openUrl } from "@/lib/utils"
+import { formatDate, openUrl, providerDisplayName } from "@/lib/utils"
 import { colors } from "@/theme"
-import type { TaggedItem, YoutubeItemContent, RssItemContent, ScrapItemParams } from "@/types"
+import { isKnownTaggedItem } from "@/types"
+import type {
+  TaggedItem,
+  YoutubeItemContent,
+  RssItemContent,
+  ScrapItemParams,
+  GenericItem,
+} from "@/types"
 
 const LS_FONT_KEY = "STAYUP_FONT_SIZE_OFFSET"
 const BASE_FONT = 16
@@ -50,6 +57,7 @@ function extractHostname(url: string): string {
 }
 
 function getTitle(tagged: TaggedItem, noTitle: string, scrapLabel: string): string {
+  if (!isKnownTaggedItem(tagged)) return providerDisplayName(tagged.provider)
   if (tagged.provider === "changelog") return tagged.item.version
   if (tagged.provider === "youtube") {
     try {
@@ -145,35 +153,45 @@ export default function FeedDetailScreen() {
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
-        {tagged.provider === "changelog" && (
-          <ChangelogDetail
+        {isKnownTaggedItem(tagged) ? (
+          <>
+            {tagged.provider === "changelog" && (
+              <ChangelogDetail
+                item={tagged.item}
+                repoUrl={repoUrl}
+                repositoryLabel={t.viewer.repository}
+                openOnGithub={t.viewer.openOnGithub}
+                bodyFontSize={bodyFontSize}
+              />
+            )}
+            {tagged.provider === "youtube" && (
+              <YoutubeDetail
+                item={tagged.item}
+                noTitle={t.viewer.noTitle}
+                watchOnYoutube={t.viewer.watchOnYoutube}
+                bodyFontSize={bodyFontSize}
+              />
+            )}
+            {tagged.provider === "rss" && (
+              <RssDetail
+                item={tagged.item}
+                noTitle={t.viewer.noTitle}
+                readArticle={t.viewer.readArticle}
+                bodyFontSize={bodyFontSize}
+              />
+            )}
+            {tagged.provider === "scrap" && (
+              <ScrapDetail
+                item={tagged.item}
+                visitWebsite={t.viewer.visitWebsite}
+                bodyFontSize={bodyFontSize}
+              />
+            )}
+          </>
+        ) : (
+          <GenericDetail
             item={tagged.item}
-            repoUrl={repoUrl}
-            repositoryLabel={t.viewer.repository}
-            openOnGithub={t.viewer.openOnGithub}
-            bodyFontSize={bodyFontSize}
-          />
-        )}
-        {tagged.provider === "youtube" && (
-          <YoutubeDetail
-            item={tagged.item}
-            noTitle={t.viewer.noTitle}
-            watchOnYoutube={t.viewer.watchOnYoutube}
-            bodyFontSize={bodyFontSize}
-          />
-        )}
-        {tagged.provider === "rss" && (
-          <RssDetail
-            item={tagged.item}
-            noTitle={t.viewer.noTitle}
-            readArticle={t.viewer.readArticle}
-            bodyFontSize={bodyFontSize}
-          />
-        )}
-        {tagged.provider === "scrap" && (
-          <ScrapDetail
-            item={tagged.item}
-            visitWebsite={t.viewer.visitWebsite}
+            providerLabel={providerDisplayName(tagged.provider)}
             bodyFontSize={bodyFontSize}
           />
         )}
@@ -419,6 +437,42 @@ function ScrapDetail({
             {visitWebsite}
           </Text>
         </Pressable>
+      )}
+    </View>
+  )
+}
+
+function GenericDetail({
+  item,
+  providerLabel,
+  bodyFontSize,
+}: {
+  item: GenericItem
+  providerLabel: string
+  bodyFontSize: number
+}) {
+  return (
+    <View>
+      <View className="mb-4 flex-row items-center gap-2">
+        <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: colors.surfaceHi }}>
+          <Text className="text-sm font-mono font-semibold" style={{ color: colors.muted }}>
+            {providerLabel}
+          </Text>
+        </View>
+        {item.version && (
+          <Text className="text-sm font-mono" style={{ color: colors.dim }}>
+            {item.version}
+          </Text>
+        )}
+        <Text className="ml-auto text-sm font-mono" style={{ color: colors.dim }}>
+          {formatDate(item.datetime ?? item.executed_at)}
+        </Text>
+      </View>
+
+      {item.content && (
+        <Text className="leading-relaxed" style={{ fontSize: bodyFontSize, color: colors.fgSoft }}>
+          {item.content}
+        </Text>
       )}
     </View>
   )

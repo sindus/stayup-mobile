@@ -1,4 +1,15 @@
-export type Provider = "changelog" | "youtube" | "rss" | "scrap"
+// Un provider n'est plus une liste fermée : n'importe quel nom renvoyé par
+// GET /connectors/providers est valide. Ces 4 noms restent seulement pour savoir quels
+// providers ont un rendu riche dédié dans l'app — tout le reste retombe sur un rendu
+// générique (voir isKnownProvider / isKnownTaggedItem).
+export const KNOWN_PROVIDERS = ["changelog", "youtube", "rss", "scrap"] as const
+export type KnownProvider = (typeof KNOWN_PROVIDERS)[number]
+
+export function isKnownProvider(name: string): name is KnownProvider {
+  return (KNOWN_PROVIDERS as readonly string[]).includes(name)
+}
+
+export type Provider = string
 
 export interface UserRepository {
   id: string
@@ -72,21 +83,29 @@ export interface ScrapItem {
   success: boolean
 }
 
-export type TaggedItem =
+// Forme minimale garantie par le contrat d'un provider (voir stayup-api) pour tout
+// provider sans rendu dédié dans l'app.
+export interface GenericItem {
+  id: number
+  repository_id: number
+  content: string
+  datetime?: string | null
+  version?: string | null
+  executed_at: string
+}
+
+export type ConnectorItem = ChangelogItem | YoutubeItem | RssItem | ScrapItem | GenericItem
+
+export type KnownTaggedItem =
   | { provider: "changelog"; item: ChangelogItem }
   | { provider: "youtube"; item: YoutubeItem }
   | { provider: "rss"; item: RssItem }
   | { provider: "scrap"; item: ScrapItem }
 
-export type ConnectorItem = ChangelogItem | YoutubeItem | RssItem | ScrapItem
+export type TaggedItem = KnownTaggedItem | { provider: string; item: GenericItem }
 
-export interface ConnectorData {
-  connectors: {
-    changelog?: ChangelogItem[]
-    youtube?: YoutubeItem[]
-    rss?: RssItem[]
-    scrap?: ScrapItem[]
-  }
+export function isKnownTaggedItem(tagged: TaggedItem): tagged is KnownTaggedItem {
+  return isKnownProvider(tagged.provider)
 }
 
 export interface ScrapRepository {

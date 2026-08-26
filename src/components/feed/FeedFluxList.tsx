@@ -6,8 +6,9 @@ import type { FeedFlux } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
 import { readToken, readApiUrl } from "@/lib/store"
-import { stripUrlScheme } from "@/lib/utils"
-import { colors, provider as providerMeta } from "@/theme"
+import { providerDisplayName, stripUrlScheme } from "@/lib/utils"
+import { colors, getProviderMeta } from "@/theme"
+import { isKnownProvider } from "@/types"
 import type { Provider } from "@/types"
 
 interface FeedFluxListProps {
@@ -34,7 +35,13 @@ export function FeedFluxList({
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(true)
 
-  const providers: Provider[] = ["changelog", "youtube", "rss", "scrap"]
+  // Dynamique : les providers affichés sont ceux réellement présents dans les flux de
+  // l'utilisateur, pas une liste fermée codée en dur.
+  const providers = Array.from(new Set(fluxes.map((f) => f.provider)))
+
+  function providerLabel(p: Provider): string {
+    return isKnownProvider(p) ? t.feed.providers[p] : providerDisplayName(p)
+  }
 
   async function handleDelete(flux: FeedFlux) {
     Alert.alert(t.common.confirmDelete, flux.identifier, [
@@ -71,13 +78,13 @@ export function FeedFluxList({
           {!expanded && selectedProvider && (
             <View
               className="rounded-full px-2 py-0.5"
-              style={{ backgroundColor: providerMeta[selectedProvider].dim }}
+              style={{ backgroundColor: getProviderMeta(selectedProvider).dim }}
             >
               <Text
                 className="text-sm font-medium"
-                style={{ color: providerMeta[selectedProvider].color }}
+                style={{ color: getProviderMeta(selectedProvider).color }}
               >
-                {t.feed.providers[selectedProvider]}
+                {providerLabel(selectedProvider)}
               </Text>
             </View>
           )}
@@ -139,17 +146,17 @@ export function FeedFluxList({
                   key={p}
                   onPress={() => onSelectProvider(active ? null : p)}
                   className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
-                  style={{ backgroundColor: active ? providerMeta[p].dim : colors.surface }}
+                  style={{ backgroundColor: active ? getProviderMeta(p).dim : colors.surface }}
                 >
                   <View
                     className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: providerMeta[p].color }}
+                    style={{ backgroundColor: getProviderMeta(p).color }}
                   />
                   <Text
                     className="text-base font-medium"
-                    style={{ color: active ? providerMeta[p].color : colors.fgSoft }}
+                    style={{ color: active ? getProviderMeta(p).color : colors.fgSoft }}
                   >
-                    {t.feed.providers[p]}
+                    {providerLabel(p)}
                   </Text>
                   {providerUnread > 0 && (
                     <View

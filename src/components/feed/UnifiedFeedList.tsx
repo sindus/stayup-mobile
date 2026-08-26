@@ -8,9 +8,11 @@ import type {
   RssItemContent,
   ScrapItem,
   ScrapItemParams,
+  GenericItem,
   TaggedItem,
 } from "@/types"
-import { formatDate, openUrl } from "@/lib/utils"
+import { isKnownTaggedItem } from "@/types"
+import { formatDate, openUrl, providerDisplayName } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
 import { colors } from "@/theme"
 
@@ -41,10 +43,7 @@ function getItemDate(tagged: TaggedItem): string {
 }
 
 interface UnifiedFeedListProps {
-  changelog: ChangelogItem[]
-  youtube: YoutubeItem[]
-  rss: RssItem[]
-  scrap: ScrapItem[]
+  items: TaggedItem[]
   repositories?: { repository_id: number; url: string }[]
   loading?: boolean
   onRefresh?: () => void
@@ -54,10 +53,7 @@ interface UnifiedFeedListProps {
 }
 
 export function UnifiedFeedList({
-  changelog,
-  youtube,
-  rss,
-  scrap,
+  items,
   repositories = [],
   loading,
   onRefresh,
@@ -68,12 +64,9 @@ export function UnifiedFeedList({
   const { t } = useLanguage()
   const repoUrlMap = Object.fromEntries(repositories.map((r) => [r.repository_id, r.url]))
 
-  const all: TaggedItem[] = [
-    ...changelog.map((item) => ({ provider: "changelog" as const, item })),
-    ...youtube.map((item) => ({ provider: "youtube" as const, item })),
-    ...rss.map((item) => ({ provider: "rss" as const, item })),
-    ...scrap.map((item) => ({ provider: "scrap" as const, item })),
-  ].sort((a, b) => new Date(getItemDate(b)).getTime() - new Date(getItemDate(a)).getTime())
+  const all: TaggedItem[] = [...items].sort(
+    (a, b) => new Date(getItemDate(b)).getTime() - new Date(getItemDate(a)).getTime(),
+  )
 
   if (all.length === 0 && !loading) {
     return (
@@ -99,21 +92,31 @@ export function UnifiedFeedList({
             className="border-b px-4 py-3"
             style={{ borderColor: colors.borderSoft, opacity: isRead && !isOpen ? 0.45 : 1 }}
           >
-            {tagged.provider === "changelog" && (
-              <ChangelogEntry
+            {isKnownTaggedItem(tagged) ? (
+              <>
+                {tagged.provider === "changelog" && (
+                  <ChangelogEntry
+                    item={tagged.item}
+                    repoUrl={repoUrlMap[tagged.item.repository_id] ?? ""}
+                    onPress={onPress}
+                    repositoryLabel={t.viewer.repository}
+                  />
+                )}
+                {tagged.provider === "youtube" && (
+                  <YoutubeEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />
+                )}
+                {tagged.provider === "rss" && (
+                  <RssEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />
+                )}
+                {tagged.provider === "scrap" && <ScrapEntry item={tagged.item} onPress={onPress} />}
+              </>
+            ) : (
+              <GenericEntry
                 item={tagged.item}
-                repoUrl={repoUrlMap[tagged.item.repository_id] ?? ""}
                 onPress={onPress}
-                repositoryLabel={t.viewer.repository}
+                providerLabel={providerDisplayName(tagged.provider)}
               />
             )}
-            {tagged.provider === "youtube" && (
-              <YoutubeEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />
-            )}
-            {tagged.provider === "rss" && (
-              <RssEntry item={tagged.item} onPress={onPress} noTitle={t.viewer.noTitle} />
-            )}
-            {tagged.provider === "scrap" && <ScrapEntry item={tagged.item} onPress={onPress} />}
           </View>
         )
       }}
@@ -289,6 +292,32 @@ function RssEntry({
           {parsed.summary}
         </Text>
       )}
+    </Pressable>
+  )
+}
+
+function GenericEntry({
+  item,
+  onPress,
+  providerLabel,
+}: {
+  item: GenericItem
+  onPress?: () => void
+  providerLabel: string
+}) {
+  return (
+    <Pressable onPress={onPress} className="border-l-2 pl-3 py-1" style={{ borderColor: colors.dim }}>
+      <View className="mb-1 flex-row items-center justify-between gap-2">
+        <Text className="flex-1 text-base font-medium" style={{ color: colors.fg }} numberOfLines={1}>
+          {item.content?.slice(0, 80) || providerLabel}
+        </Text>
+        <Text className="text-sm font-mono" style={{ color: colors.dim }}>
+          {formatDate(item.datetime ?? item.executed_at)}
+        </Text>
+      </View>
+      <Text className="text-sm font-mono" style={{ color: colors.dim }}>
+        {providerLabel}
+      </Text>
     </Pressable>
   )
 }

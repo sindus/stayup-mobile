@@ -42,26 +42,21 @@ export default function FeedScreen() {
 
   useEffect(() => {
     if (!connectors || !initialized) return
-    const allIds = new Set<string>([
-      ...(connectors.changelog ?? []).map((item) =>
-        getTaggedItemId({ provider: "changelog", item }),
+    const allIds = new Set(
+      Object.entries(connectors).flatMap(([provider, items]) =>
+        items.map((item) => getTaggedItemId({ provider, item } as TaggedItem)),
       ),
-      ...(connectors.youtube ?? []).map((item) => getTaggedItemId({ provider: "youtube", item })),
-      ...(connectors.rss ?? []).map((item) => getTaggedItemId({ provider: "rss", item })),
-      ...(connectors.scrap ?? []).map((item) => getTaggedItemId({ provider: "scrap", item })),
-    ])
+    )
     void cleanup(allIds)
   }, [connectors, initialized, cleanup])
 
-  const c = connectors ?? { changelog: [], youtube: [], rss: [], scrap: [] }
+  const c = connectors ?? {}
 
   const allTaggedItems = useMemo<TaggedItem[]>(
-    () => [
-      ...(c.changelog ?? []).map((item) => ({ provider: "changelog" as const, item })),
-      ...(c.youtube ?? []).map((item) => ({ provider: "youtube" as const, item })),
-      ...(c.rss ?? []).map((item) => ({ provider: "rss" as const, item })),
-      ...(c.scrap ?? []).map((item) => ({ provider: "scrap" as const, item })),
-    ],
+    () =>
+      Object.entries(c).flatMap(
+        ([provider, items]) => items.map((item) => ({ provider, item }) as TaggedItem),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [connectors],
   )
@@ -110,34 +105,18 @@ export default function FeedScreen() {
     )
   }
 
-  const providerFiltered = selectedProvider
-    ? {
-        changelog: selectedProvider === "changelog" ? c.changelog : [],
-        youtube: selectedProvider === "youtube" ? c.youtube : [],
-        rss: selectedProvider === "rss" ? c.rss : [],
-        scrap: selectedProvider === "scrap" ? c.scrap : [],
-      }
-    : c
+  const providerFilteredItems = selectedProvider
+    ? allTaggedItems.filter((tagged) => tagged.provider === selectedProvider)
+    : allTaggedItems
 
-  const filtered =
+  const filteredItems =
     filterMode === "unread"
-      ? {
-          changelog: (providerFiltered.changelog ?? []).filter(
-            (item) => !readIds.has(`changelog:${item.id}`) || `changelog:${item.id}` === openItemId,
-          ),
-          youtube: (providerFiltered.youtube ?? []).filter(
-            (item) => !readIds.has(`youtube:${item.id}`) || `youtube:${item.id}` === openItemId,
-          ),
-          rss: (providerFiltered.rss ?? []).filter(
-            (item) => !readIds.has(`rss:${item.id}`) || `rss:${item.id}` === openItemId,
-          ),
-          scrap: (providerFiltered.scrap ?? []).filter(
-            (item) => !readIds.has(`scrap:${item.id}`) || `scrap:${item.id}` === openItemId,
-          ),
-        }
-      : providerFiltered
+      ? providerFilteredItems.filter(
+          (tagged) => !readIds.has(getTaggedItemId(tagged)) || getTaggedItemId(tagged) === openItemId,
+        )
+      : providerFilteredItems
 
-  const totalItems = Object.values(providerFiltered).flat().length
+  const totalItems = providerFilteredItems.length
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={["top"]}>
@@ -209,10 +188,7 @@ export default function FeedScreen() {
       </View>
 
       <UnifiedFeedList
-        changelog={filtered.changelog ?? []}
-        youtube={filtered.youtube ?? []}
-        rss={filtered.rss ?? []}
-        scrap={filtered.scrap ?? []}
+        items={filteredItems}
         repositories={fluxes}
         loading={loading}
         onRefresh={refresh}

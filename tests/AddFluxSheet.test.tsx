@@ -2,7 +2,13 @@ import { TextInput } from "react-native"
 import { screen, fireEvent, waitFor } from "@testing-library/react-native"
 import * as SecureStore from "expo-secure-store"
 import { AddFluxSheet } from "@/components/feed/AddFluxSheet"
-import { addUserRepository, createScrapRequest, getScrapRepos, subscribeScrap } from "@/lib/api"
+import {
+  addUserRepository,
+  createScrapRequest,
+  getConnectorProviders,
+  getScrapRepos,
+  subscribeScrap,
+} from "@/lib/api"
 import { renderWithProviders } from "./render"
 
 jest.mock("@/lib/api", () => ({
@@ -10,6 +16,7 @@ jest.mock("@/lib/api", () => ({
   createScrapRequest: jest.fn(),
   getScrapRepos: jest.fn(),
   subscribeScrap: jest.fn(),
+  getConnectorProviders: jest.fn(),
 }))
 
 const secureStore = SecureStore as unknown as { getItemAsync: jest.Mock }
@@ -17,16 +24,20 @@ const mockedAdd = addUserRepository as jest.Mock
 const mockedCreateRequest = createScrapRequest as jest.Mock
 const mockedGetScrapRepos = getScrapRepos as jest.Mock
 const mockedSubscribe = subscribeScrap as jest.Mock
+const mockedGetConnectorProviders = getConnectorProviders as jest.Mock
 
 const API_URL = "https://stayup-api.r-sik.workers.dev"
 
-function setup(props: Partial<React.ComponentProps<typeof AddFluxSheet>> = {}) {
+// Le dialogue charge la liste des providers au montage (GET /connectors/providers via
+// getConnectorProviders) : les tuiles n'apparaissent qu'après cette résolution async.
+async function setup(props: Partial<React.ComponentProps<typeof AddFluxSheet>> = {}) {
   const onClose = jest.fn()
   const onSuccess = jest.fn()
 
   renderWithProviders(
     <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} {...props} />,
   )
+  await waitFor(() => expect(screen.getByText("GitHub")).toBeTruthy())
 
   return { onClose, onSuccess }
 }
@@ -39,11 +50,17 @@ beforeEach(() => {
   secureStore.getItemAsync.mockResolvedValue("tok")
   mockedGetScrapRepos.mockResolvedValue([])
   mockedAdd.mockResolvedValue(undefined)
+  mockedGetConnectorProviders.mockResolvedValue([
+    { name: "changelog", displayName: "Changelog" },
+    { name: "youtube", displayName: "YouTube" },
+    { name: "rss", displayName: "RSS" },
+    { name: "scrap", displayName: "Scrap" },
+  ])
 })
 
 describe("AddFluxSheet — providers", () => {
   it("lists the four feed providers and no longer offers Documentation", async () => {
-    setup()
+    await setup()
 
     await waitFor(() => expect(screen.getByText("GitHub")).toBeTruthy())
     expect(screen.getByText("YouTube")).toBeTruthy()
@@ -53,7 +70,7 @@ describe("AddFluxSheet — providers", () => {
   })
 
   it("shows the identifier label of the selected provider", async () => {
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("Dépôt GitHub")).toBeTruthy())
 
     fireEvent.press(screen.getByText("YouTube"))
@@ -66,7 +83,7 @@ describe("AddFluxSheet — providers", () => {
 
 describe("AddFluxSheet — ajout par identifiant", () => {
   it("normalizes the identifier and posts the repository", async () => {
-    const { onSuccess, onClose } = setup()
+    const { onSuccess, onClose } = await setup()
     await waitFor(() => expect(screen.getByText("Dépôt GitHub")).toBeTruthy())
 
     fireEvent.changeText(firstInput(), "https://github.com/facebook/react.git")
@@ -84,7 +101,7 @@ describe("AddFluxSheet — ajout par identifiant", () => {
   })
 
   it("builds a YouTube url from a bare handle", async () => {
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("YouTube")).toBeTruthy())
     fireEvent.press(screen.getByText("YouTube"))
 
@@ -102,7 +119,7 @@ describe("AddFluxSheet — ajout par identifiant", () => {
   })
 
   it("rejects an empty identifier", async () => {
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("Ajouter")).toBeTruthy())
 
     fireEvent.press(screen.getByText("Ajouter"))
@@ -113,7 +130,7 @@ describe("AddFluxSheet — ajout par identifiant", () => {
 
   it("reports a missing token", async () => {
     secureStore.getItemAsync.mockResolvedValue(null)
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("Ajouter")).toBeTruthy())
 
     fireEvent.changeText(firstInput(), "facebook/react")
@@ -124,7 +141,7 @@ describe("AddFluxSheet — ajout par identifiant", () => {
 
   it("surfaces the API error", async () => {
     mockedAdd.mockRejectedValue(new Error("StayUp API error 500"))
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("Ajouter")).toBeTruthy())
 
     fireEvent.changeText(firstInput(), "facebook/react")
@@ -135,7 +152,7 @@ describe("AddFluxSheet — ajout par identifiant", () => {
 
   it("falls back to the generic error for a non-Error rejection", async () => {
     mockedAdd.mockRejectedValue("boom")
-    setup()
+    await setup()
     await waitFor(() => expect(screen.getByText("Ajouter")).toBeTruthy())
 
     fireEvent.changeText(firstInput(), "facebook/react")
@@ -165,7 +182,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
 
   it("lists only the repos that are not already subscribed", async () => {
     mockedGetScrapRepos.mockResolvedValue(repos)
-    setup()
+    await setup()
     fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
@@ -174,7 +191,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
 
   it("shows the empty state when nothing is available", async () => {
     mockedGetScrapRepos.mockResolvedValue([])
-    setup()
+    await setup()
     fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
@@ -182,7 +199,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
 
   it("falls back to an empty list when the fetch fails", async () => {
     mockedGetScrapRepos.mockRejectedValue(new Error("500"))
-    setup()
+    await setup()
     fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
@@ -190,7 +207,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
 
   it("falls back to an empty list when there is no token", async () => {
     secureStore.getItemAsync.mockResolvedValue(null)
-    setup()
+    await setup()
     fireEvent.press(screen.getByText("Web"))
 
     await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
@@ -199,7 +216,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
 
   it("requires a selection before subscribing", async () => {
     mockedGetScrapRepos.mockResolvedValue(repos)
-    setup()
+    await setup()
     fireEvent.press(screen.getByText("Web"))
     await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
 
@@ -212,7 +229,7 @@ describe("AddFluxSheet — abonnement scraping", () => {
   it("subscribes to the selected repo", async () => {
     mockedGetScrapRepos.mockResolvedValue(repos)
     mockedSubscribe.mockResolvedValue(undefined)
-    const { onSuccess } = setup()
+    const { onSuccess } = await setup()
     fireEvent.press(screen.getByText("Web"))
     await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
 
@@ -231,7 +248,7 @@ describe("AddFluxSheet — demande de scraping", () => {
   }
 
   it("requires a url", async () => {
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -242,7 +259,7 @@ describe("AddFluxSheet — demande de scraping", () => {
   })
 
   it("rejects a malformed url", async () => {
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -255,7 +272,7 @@ describe("AddFluxSheet — demande de scraping", () => {
 
   it("confirms once the request is sent", async () => {
     mockedCreateRequest.mockResolvedValue({ id: "req-1" })
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -272,7 +289,7 @@ describe("AddFluxSheet — demande de scraping", () => {
 
   it("surfaces a request failure", async () => {
     mockedCreateRequest.mockRejectedValue(new Error("quota dépassé"))
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -284,7 +301,7 @@ describe("AddFluxSheet — demande de scraping", () => {
 
   it("reports a missing token", async () => {
     secureStore.getItemAsync.mockResolvedValue(null)
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -296,7 +313,7 @@ describe("AddFluxSheet — demande de scraping", () => {
 
   it("falls back to the generic error for a non-Error rejection", async () => {
     mockedCreateRequest.mockRejectedValue("boom")
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -307,7 +324,7 @@ describe("AddFluxSheet — demande de scraping", () => {
   })
 
   it("switches back to the selection mode", async () => {
-    setup()
+    await setup()
     openRequestMode()
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())
 
@@ -317,9 +334,37 @@ describe("AddFluxSheet — demande de scraping", () => {
   })
 })
 
+describe("AddFluxSheet — provider inconnu de l'app", () => {
+  it("renders a generic tile and posts a plain URL identifier", async () => {
+    mockedGetConnectorProviders.mockResolvedValue([
+      { name: "changelog", displayName: "Changelog" },
+      { name: "youtube", displayName: "YouTube" },
+      { name: "rss", displayName: "RSS" },
+      { name: "scrap", displayName: "Scrap" },
+      { name: "podcast", displayName: "Podcast" },
+    ])
+    const { onSuccess } = await setup()
+
+    fireEvent.press(screen.getByText("Podcast"))
+    await waitFor(() => expect(screen.getByText("URL")).toBeTruthy())
+
+    fireEvent.changeText(firstInput(), "https://example.com/feed.xml")
+    fireEvent.press(screen.getByText("Ajouter"))
+
+    await waitFor(() =>
+      expect(mockedAdd).toHaveBeenCalledWith("user-1", "tok", API_URL, {
+        provider: "podcast",
+        url: "https://example.com/feed.xml",
+        config: { max_scraps: 5, retention_days: 15 },
+      }),
+    )
+    expect(onSuccess).toHaveBeenCalled()
+  })
+})
+
 describe("AddFluxSheet — fermeture", () => {
   it("closes from the cross", async () => {
-    const { onClose } = setup()
+    const { onClose } = await setup()
     await waitFor(() => expect(screen.getByTestId("icon-X")).toBeTruthy())
 
     fireEvent.press(screen.getByTestId("icon-X"))
@@ -327,7 +372,7 @@ describe("AddFluxSheet — fermeture", () => {
   })
 
   it("does not close when the sheet body itself is tapped", async () => {
-    const { onClose } = setup()
+    const { onClose } = await setup()
     await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
 
     const stopPropagation = jest.fn()
@@ -338,7 +383,7 @@ describe("AddFluxSheet — fermeture", () => {
   })
 
   it("closes from the cancel button", async () => {
-    const { onClose } = setup()
+    const { onClose } = await setup()
     await waitFor(() => expect(screen.getByText("Annuler")).toBeTruthy())
 
     fireEvent.press(screen.getByText("Annuler"))
@@ -346,7 +391,7 @@ describe("AddFluxSheet — fermeture", () => {
   })
 
   it("resets the form between openings", async () => {
-    const { onClose } = setup()
+    const { onClose } = await setup()
     await waitFor(() => expect(screen.getByText("Dépôt GitHub")).toBeTruthy())
 
     fireEvent.press(screen.getByText("YouTube"))
@@ -360,7 +405,7 @@ describe("AddFluxSheet — fermeture", () => {
 
   it("closes from the confirmation screen", async () => {
     mockedCreateRequest.mockResolvedValue({ id: "req-1" })
-    const { onClose } = setup()
+    const { onClose } = await setup()
     fireEvent.press(screen.getByText("Web"))
     fireEvent.press(screen.getByText("Faire une demande"))
     await waitFor(() => expect(screen.getByText("URL de la page à scraper")).toBeTruthy())

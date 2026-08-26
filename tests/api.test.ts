@@ -2,6 +2,7 @@ import {
   loginWithPassword,
   registerWithPassword,
   getUserFeed,
+  getConnectorProviders,
   addUserRepository,
   deleteUserRepository,
   getScrapRepos,
@@ -97,6 +98,18 @@ describe("getUserFeed (apiFetch retry)", () => {
     expect(url).toBe(`${API_URL}/ui/users/user-1/feed`)
     expect(init.headers.Authorization).toBe("Bearer tok")
     expect(init.headers["Content-Type"]).toBe("application/json")
+  })
+})
+
+describe("getConnectorProviders", () => {
+  it("returns the discovered providers and sends the bearer token", async () => {
+    mockFetch(200, { providers: [{ name: "youtube", displayName: "YouTube" }] })
+    const providers = await getConnectorProviders("tok", API_URL)
+    expect(providers).toEqual([{ name: "youtube", displayName: "YouTube" }])
+
+    const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
+    expect(url).toBe(`${API_URL}/connectors/providers`)
+    expect(init.headers.Authorization).toBe("Bearer tok")
   })
 })
 

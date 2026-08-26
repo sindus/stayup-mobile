@@ -70,6 +70,18 @@ export const provider = {
 
 export type ProviderKey = keyof typeof provider
 
+// Style de repli pour tout provider sans rendu dédié dans l'app (voir isKnownProvider
+// dans @/types) : un provider n'est plus limité aux 4 connus.
+export function getProviderMeta(name: string): { color: string; dim: string; label: string } {
+  return (
+    (provider as Record<string, { color: string; dim: string; label: string }>)[name] ?? {
+      color: colors.muted,
+      dim: colors.surfaceHi,
+      label: name.charAt(0).toUpperCase() + name.slice(1),
+    }
+  )
+}
+
 export const aurora = { colors, fonts, motion, provider } as const
 
 export default aurora

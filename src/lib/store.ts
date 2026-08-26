@@ -4,7 +4,8 @@ import type { Language } from "@/lib/translations"
 
 const AUTH_KEY = "auth_token"
 const LANG_KEY = "lang"
-const API_URL = "https://stayup-api.r-sik.workers.dev"
+const API_URL_KEY = "api_url"
+const DEFAULT_API_URL = "https://stayup-api.r-sik.workers.dev"
 
 export async function readToken(): Promise<string | null> {
   return SecureStore.getItemAsync(AUTH_KEY)
@@ -19,7 +20,16 @@ export async function clearToken(): Promise<void> {
 }
 
 export async function readApiUrl(): Promise<string> {
-  return API_URL
+  const v = await AsyncStorage.getItem(API_URL_KEY)
+  return v ?? DEFAULT_API_URL
+}
+
+export async function writeApiUrl(url: string): Promise<void> {
+  await AsyncStorage.setItem(API_URL_KEY, url)
+}
+
+export async function resetApiUrl(): Promise<void> {
+  await AsyncStorage.removeItem(API_URL_KEY)
 }
 
 export async function readLang(): Promise<Language | null> {

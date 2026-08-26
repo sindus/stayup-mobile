@@ -1,16 +1,28 @@
 import { useState, useEffect } from "react"
 import { Modal, View, Text, TextInput, Pressable, ActivityIndicator } from "react-native"
 import { X } from "lucide-react-native"
-import { addUserRepository, createScrapRequest, getScrapRepos, subscribeScrap } from "@/lib/api"
+import {
+  addUserRepository,
+  createScrapRequest,
+  getConnectorProviders,
+  getScrapRepos,
+  subscribeScrap,
+} from "@/lib/api"
 import { readApiUrl, readToken } from "@/lib/store"
 import { normalizeIdentifier, toRepositoryUrl } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
-import { colors, provider as providerMeta } from "@/theme"
-import type { Provider, ScrapRepository } from "@/types"
+import { colors, getProviderMeta } from "@/theme"
+import { isKnownProvider, type KnownProvider } from "@/types"
+import type { ScrapRepository } from "@/types"
 
-type FeedProvider = "changelog" | "youtube" | "rss"
+type FeedProvider = Exclude<KnownProvider, "scrap">
 
-const PROVIDERS: Provider[] = ["changelog", "youtube", "rss", "scrap"]
+interface ProviderTile {
+  id: string
+  label: string
+  color: string
+  dim: string
+}
 
 interface AddFluxSheetProps {
   visible: boolean
@@ -21,7 +33,7 @@ interface AddFluxSheetProps {
 
 export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxSheetProps) {
   const { t } = useLanguage()
-  const [provider, setProvider] = useState<Provider>("changelog")
+  const [provider, setProvider] = useState<string>("changelog")
   const [identifier, setIdentifier] = useState("")
   const [scrapRepoId, setScrapRepoId] = useState<number | null>(null)
   const [scrapRepos, setScrapRepos] = useState<ScrapRepository[] | null>(null)
@@ -30,6 +42,31 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
   const [scrapMode, setScrapMode] = useState<"select" | "request">("select")
   const [requestUrl, setRequestUrl] = useState("")
   const [requestSuccess, setRequestSuccess] = useState(false)
+  const [tiles, setTiles] = useState<ProviderTile[]>([])
+
+  // Liste des providers dynamique : vient de l'API, aucun nom n'est codé en dur ici.
+  useEffect(() => {
+    if (!visible) return
+    let cancelled = false
+    Promise.all([readToken(), readApiUrl()])
+      .then(([token, apiUrl]) => getConnectorProviders(token ?? "", apiUrl))
+      .then((providers) => {
+        if (cancelled) return
+        setTiles(
+          providers.map(({ name, displayName }) => {
+            const meta = getProviderMeta(name)
+            const label = isKnownProvider(name) ? t.feed.providers[name] : displayName
+            return { id: name, label, color: meta.color, dim: meta.dim }
+          }),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setTiles([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [visible, t])
 
   useEffect(() => {
     if (provider !== "scrap") return
@@ -110,8 +147,8 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
       if (provider === "scrap") {
         await subscribeScrap(scrapRepoId!, token, apiUrl)
       } else {
-        const normalized = normalizeIdentifier(identifier, provider as FeedProvider)
-        const url = toRepositoryUrl(normalized, provider as FeedProvider)
+        const normalized = normalizeIdentifier(identifier, provider)
+        const url = toRepositoryUrl(normalized, provider)
         await addUserRepository(userId, token, apiUrl, {
           provider,
           url,
@@ -129,6 +166,7 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
   const scrapLoading = provider === "scrap" && scrapRepos === null
   const availableScrapRepos = (scrapRepos ?? []).filter((r) => !r.is_subscribed)
+  const isKnownFeedProvider = provider === "changelog" || provider === "youtube" || provider === "rss"
   const inputStyle = {
     borderColor: colors.border,
     backgroundColor: colors.bg,
@@ -185,14 +223,13 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                     {t.addFlux.provider}
                   </Text>
                   <View className="flex-row flex-wrap gap-2">
-                    {PROVIDERS.map((value) => {
-                      const active = provider === value
-                      const meta = providerMeta[value]
+                    {tiles.map((tile) => {
+                      const active = provider === tile.id
                       return (
                         <Pressable
-                          key={value}
+                          key={tile.id}
                           onPress={() => {
-                            setProvider(value)
+                            setProvider(tile.id)
                             setIdentifier("")
                             setScrapRepoId(null)
                             setScrapRepos(null)
@@ -202,15 +239,15 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                           className="rounded-xl px-3.5 py-2.5 border"
                           style={{
                             width: "47%",
-                            backgroundColor: active ? meta.dim : colors.bg,
-                            borderColor: active ? meta.color : colors.border,
+                            backgroundColor: active ? tile.dim : colors.bg,
+                            borderColor: active ? tile.color : colors.border,
                           }}
                         >
                           <Text
                             className="text-[13.5px] font-medium"
-                            style={{ color: active ? meta.color : colors.fgSoft }}
+                            style={{ color: active ? tile.color : colors.fgSoft }}
                           >
-                            {meta.label}
+                            {tile.label}
                           </Text>
                         </Pressable>
                       )
@@ -312,14 +349,20 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                 ) : (
                   <View className="gap-1.5">
                     <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
-                      {t.addFlux.identifierLabels[provider as FeedProvider]}
+                      {isKnownFeedProvider
+                        ? t.addFlux.identifierLabels[provider as FeedProvider]
+                        : t.addFlux.identifierLabels.generic}
                     </Text>
                     <TextInput
                       className="rounded-xl border px-3.5 py-3"
                       style={inputStyle}
                       value={identifier}
                       onChangeText={setIdentifier}
-                      placeholder={t.addFlux.placeholders[provider as FeedProvider]}
+                      placeholder={
+                        isKnownFeedProvider
+                          ? t.addFlux.placeholders[provider as FeedProvider]
+                          : t.addFlux.placeholders.generic
+                      }
                       placeholderTextColor={colors.dim}
                       autoCapitalize="none"
                     />
