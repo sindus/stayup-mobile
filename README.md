@@ -4,6 +4,8 @@
 [![EAS Preview Build](https://github.com/stayup-app/stayup-mobile/actions/workflows/eas-preview.yml/badge.svg)](https://github.com/stayup-app/stayup-mobile/actions/workflows/eas-preview.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**Site web :** https://stayup-ui.vercel.app
+
 Application mobile StayUp — un lecteur unifié qui agrège vos sources de veille technique
 (changelogs GitHub, chaînes YouTube, flux RSS et pages scrapées) dans un seul feed.
 
