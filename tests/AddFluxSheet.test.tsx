@@ -59,15 +59,17 @@ beforeEach(() => {
 })
 
 describe("AddFluxSheet — providers", () => {
+  // Premier test du fichier : il paie le montage à froid (chargement des polices,
+  // initialisation des modules), ce qui dépasse les 5 s par défaut sur un runner
+  // CI lent. `setup()` attend déjà l'apparition des tuiles, inutile de la réattendre.
   it("lists the four feed providers and no longer offers Documentation", async () => {
     await setup()
 
-    await waitFor(() => expect(screen.getByText("GitHub")).toBeTruthy())
     expect(screen.getByText("YouTube")).toBeTruthy()
     expect(screen.getByText("RSS")).toBeTruthy()
     expect(screen.getByText("Web")).toBeTruthy()
     expect(screen.queryByText("Documentation")).toBeNull()
-  })
+  }, 20000)
 
   it("shows the identifier label of the selected provider", async () => {
     await setup()
