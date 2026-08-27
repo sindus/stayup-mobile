@@ -106,6 +106,14 @@ export const en = {
     apiUrlReset: "Reset to default",
     apiUrlInvalid: "Enter a valid URL.",
   },
+  // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
+  errors: {
+    serverError: "Something went wrong, try again.",
+    invalidCredentials: "Wrong e-mail or password.",
+    emailTaken: "That e-mail address is already in use.",
+    alreadySubscribed: "You are already following this feed.",
+    urlOtherProvider: "This URL is already tracked under another provider.",
+  },
   common: {
     delete: "Delete",
     cancel: "Cancel",

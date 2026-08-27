@@ -3,7 +3,8 @@ import * as WebBrowser from "expo-web-browser"
 import * as AuthSession from "expo-auth-session"
 import { readToken, writeToken, clearToken, readApiUrl } from "@/lib/store"
 import { decodeToken, isTokenExpired } from "@/lib/session"
-import { loginWithPassword, registerWithPassword } from "@/lib/api"
+import { ApiError, loginWithPassword, registerWithPassword } from "@/lib/api"
+import { useLanguage } from "@/context/LanguageContext"
 import type { AppSession } from "@/lib/session"
 
 WebBrowser.maybeCompleteAuthSession()
@@ -22,6 +23,21 @@ interface UseAuth extends AuthState {
 }
 
 export function useAuth(): UseAuth {
+  const { t } = useLanguage()
+
+  // Le message porté par une ApiError vient de l'API, en anglais : on ne le montre
+  // pas, on traduit à partir du statut HTTP — seul contrat stable.
+  const authErrorMessage = useCallback(
+    (err: unknown, taken: string): string => {
+      if (err instanceof ApiError) {
+        if (err.status === 401) return t.errors.invalidCredentials
+        if (err.status === 409) return taken
+      }
+      return t.errors.serverError
+    },
+    [t],
+  )
+
   const [state, setState] = useState<AuthState>({
     session: null,
     loading: true,
@@ -56,11 +72,11 @@ export function useAuth(): UseAuth {
         setState((s) => ({
           ...s,
           loading: false,
-          error: err instanceof Error ? err.message : "Erreur de connexion.",
+          error: authErrorMessage(err, t.errors.emailTaken),
         }))
       }
     },
-    [applyToken],
+    [applyToken, authErrorMessage, t],
   )
 
   const register = useCallback(
@@ -74,11 +90,11 @@ export function useAuth(): UseAuth {
         setState((s) => ({
           ...s,
           loading: false,
-          error: err instanceof Error ? err.message : "Erreur d'inscription.",
+          error: authErrorMessage(err, t.errors.emailTaken),
         }))
       }
     },
-    [applyToken],
+    [applyToken, authErrorMessage, t],
   )
 
   const loginOAuth = useCallback(

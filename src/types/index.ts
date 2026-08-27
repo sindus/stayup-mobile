@@ -26,7 +26,6 @@ export interface ChangelogItem {
   id: number
   repository_id: number
   content: string
-  diff: string | null
   datetime: string | null
   executed_at: string
   success: boolean
@@ -45,7 +44,6 @@ export interface YoutubeItem {
   repository_id: number
   version: string
   content: string
-  diff: string | null
   datetime: string | null
   executed_at: string
   success: boolean

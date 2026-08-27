@@ -108,6 +108,14 @@ export const zh: Translations = {
     apiUrlReset: "恢复默认",
     apiUrlInvalid: "请输入有效的网址。",
   },
+  // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
+  errors: {
+    serverError: "出了点问题，请重试。",
+    invalidCredentials: "邮箱或密码不正确。",
+    emailTaken: "该邮箱地址已被使用。",
+    alreadySubscribed: "你已经关注了这个订阅源。",
+    urlOtherProvider: "该 URL 已在其他提供方下被跟踪。",
+  },
   common: {
     delete: "删除",
     cancel: "取消",

@@ -50,21 +50,21 @@ beforeEach(() => {
 
 describe("Index", () => {
   it("sends an anonymous visitor to the login screen", async () => {
-    render(<Index />)
+    renderWithProviders(<Index />)
     await waitFor(() => expect(mockRedirect).toHaveBeenCalled())
     expect(redirectedTo()).toBe("/(auth)/login")
   })
 
   it("sends an authenticated user to the feed", async () => {
     secureStore.getItemAsync.mockResolvedValue(validToken())
-    render(<Index />)
+    renderWithProviders(<Index />)
 
     await waitFor(() => expect(mockRedirect).toHaveBeenCalled())
     expect(redirectedTo()).toBe("/(app)/feed")
   })
 
   it("shows a spinner while the session is being restored", () => {
-    render(<Index />)
+    renderWithProviders(<Index />)
     expect(mockRedirect).not.toHaveBeenCalled()
   })
 })

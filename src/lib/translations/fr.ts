@@ -109,6 +109,14 @@ export const fr: Translations = {
     apiUrlReset: "Réinitialiser par défaut",
     apiUrlInvalid: "Saisis une URL valide.",
   },
+  // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
+  errors: {
+    serverError: "Erreur serveur, réessayez.",
+    invalidCredentials: "E-mail ou mot de passe incorrect.",
+    emailTaken: "Cette adresse e-mail est déjà utilisée.",
+    alreadySubscribed: "Tu suis déjà ce flux.",
+    urlOtherProvider: "Cette URL est déjà suivie sous un autre provider.",
+  },
   common: {
     delete: "Supprimer",
     cancel: "Annuler",

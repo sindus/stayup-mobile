@@ -109,6 +109,14 @@ export const de: Translations = {
     apiUrlReset: "Auf Standard zurücksetzen",
     apiUrlInvalid: "Gib eine gültige URL ein.",
   },
+  // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
+  errors: {
+    serverError: "Etwas ist schiefgelaufen, bitte erneut versuchen.",
+    invalidCredentials: "E-Mail oder Passwort ist falsch.",
+    emailTaken: "Diese E-Mail-Adresse wird bereits verwendet.",
+    alreadySubscribed: "Du folgst diesem Feed bereits.",
+    urlOtherProvider: "Diese URL wird bereits unter einem anderen Provider verfolgt.",
+  },
   common: {
     delete: "Löschen",
     cancel: "Abbrechen",

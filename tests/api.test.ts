@@ -36,16 +36,20 @@ describe("loginWithPassword", () => {
     expect(token).toBe("tok-123")
   })
 
-  it("throws on 401", async () => {
+  // Le message affiché est traduit par useAuth à partir du statut : ici on vérifie
+  // seulement que le statut est bien porté par l'erreur.
+  it("throws an ApiError carrying the 401", async () => {
     mockFetch(401, {})
-    await expect(loginWithPassword("a@b.com", "wrong", API_URL)).rejects.toThrow(
-      "Identifiants invalides.",
-    )
+    await expect(loginWithPassword("a@b.com", "wrong", API_URL)).rejects.toMatchObject({
+      status: 401,
+    })
   })
 
-  it("throws on 500", async () => {
+  it("throws an ApiError carrying the 5xx", async () => {
     mockFetch(500, {})
-    await expect(loginWithPassword("a@b.com", "pass", API_URL)).rejects.toThrow("Erreur serveur")
+    await expect(loginWithPassword("a@b.com", "pass", API_URL)).rejects.toMatchObject({
+      status: 500,
+    })
   })
 })
 
@@ -121,18 +125,18 @@ describe("registerWithPassword", () => {
     )
   })
 
-  it("throws a dedicated message on 409", async () => {
+  it("throws an ApiError carrying the 409", async () => {
     mockFetch(409, {})
-    await expect(registerWithPassword("Sika", "a@b.com", "password", API_URL)).rejects.toThrow(
-      "Un compte existe déjà avec cet email.",
-    )
+    await expect(
+      registerWithPassword("Sika", "a@b.com", "password", API_URL),
+    ).rejects.toMatchObject({ status: 409 })
   })
 
-  it("throws on any other error status", async () => {
+  it("throws an ApiError carrying any other error status", async () => {
     mockFetch(500, {})
-    await expect(registerWithPassword("Sika", "a@b.com", "password", API_URL)).rejects.toThrow(
-      "Erreur serveur, réessayez.",
-    )
+    await expect(
+      registerWithPassword("Sika", "a@b.com", "password", API_URL),
+    ).rejects.toMatchObject({ status: 500 })
   })
 })
 
@@ -196,5 +200,42 @@ describe("scrap endpoints", () => {
     const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
     expect(url).toBe(`${API_URL}/scrap/requests`)
     expect(JSON.parse(init.body).url).toBe("https://example.com")
+  })
+})
+
+describe("apiFetch — corps d'erreur et rejeu", () => {
+  it("surfaces the API error body instead of the raw status line", async () => {
+    mockFetch(409, { error: "Already subscribed" })
+    await expect(getUserFeed("u1", "tok", API_URL)).rejects.toThrow("Already subscribed")
+  })
+
+  it("falls back to the status line when the error body is not JSON", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 418,
+      json: () => Promise.reject(new Error("not json")),
+    })
+    await expect(getUserFeed("u1", "tok", API_URL)).rejects.toThrow("StayUp API error 418")
+  })
+
+  // Un POST peut avoir été traité avant la coupure : le rejouer créerait un doublon.
+  it("does not replay a write that failed with a 5xx", async () => {
+    mockFetch(500, {})
+    await expect(
+      addUserRepository("u1", "tok", API_URL, {
+        provider: "rss",
+        url: "https://x.dev/feed",
+        config: {},
+      }),
+    ).rejects.toMatchObject({ status: 500 })
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not replay a write that failed on the network", async () => {
+    mockFetchError()
+    await expect(deleteUserRepository("u1", "link-1", "tok", API_URL)).rejects.toThrow(
+      "network error",
+    )
+    expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 })

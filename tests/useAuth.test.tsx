@@ -2,9 +2,21 @@ import { renderHook, waitFor, act } from "@testing-library/react-native"
 import * as SecureStore from "expo-secure-store"
 import * as WebBrowser from "expo-web-browser"
 import { useAuth } from "@/hooks/useAuth"
-import { loginWithPassword, registerWithPassword } from "@/lib/api"
+import { ApiError, loginWithPassword, registerWithPassword } from "@/lib/api"
+import { LanguageProvider } from "@/context/LanguageContext"
+import { en } from "@/lib/translations"
 
+// useAuth traduit les erreurs à partir du statut porté par ApiError : le mock doit
+// donc l'exposer, sinon `err instanceof ApiError` ne peut jamais être vrai.
 jest.mock("@/lib/api", () => ({
+  ApiError: class ApiError extends Error {
+    status: number
+    constructor(status: number, message: string) {
+      super(message)
+      this.status = status
+      this.name = "ApiError"
+    }
+  },
   loginWithPassword: jest.fn(),
   registerWithPassword: jest.fn(),
 }))
@@ -17,6 +29,15 @@ const secureStore = SecureStore as unknown as {
 const webBrowser = WebBrowser as unknown as { openAuthSessionAsync: jest.Mock }
 const mockedLogin = loginWithPassword as jest.Mock
 const mockedRegister = registerWithPassword as jest.Mock
+
+// useAuth lit désormais les traductions : il lui faut le provider.
+function wrapper({ children }: { children: React.ReactNode }) {
+  return <LanguageProvider>{children}</LanguageProvider>
+}
+
+function renderAuth() {
+  return renderHook(() => useAuth(), { wrapper })
+}
 
 /** JWT non signé, suffisant pour decodeToken/isTokenExpired. */
 function makeToken(overrides: Record<string, unknown> = {}): string {
@@ -37,7 +58,7 @@ beforeEach(() => {
 
 describe("useAuth — restauration de session", () => {
   it("starts with no session when the store is empty", async () => {
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.session).toBeNull()
@@ -45,7 +66,7 @@ describe("useAuth — restauration de session", () => {
 
   it("restores a valid session from the stored token", async () => {
     secureStore.getItemAsync.mockResolvedValue(makeToken())
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.session).toEqual({
@@ -58,7 +79,7 @@ describe("useAuth — restauration de session", () => {
 
   it("discards an expired token", async () => {
     secureStore.getItemAsync.mockResolvedValue(makeToken({ exp: 1 }))
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.session).toBeNull()
@@ -69,7 +90,7 @@ describe("useAuth — restauration de session", () => {
 describe("useAuth — login", () => {
   it("stores the token and exposes the session", async () => {
     mockedLogin.mockResolvedValue(makeToken())
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -81,36 +102,38 @@ describe("useAuth — login", () => {
     expect(result.current.error).toBeNull()
   })
 
-  it("surfaces the API error message", async () => {
-    mockedLogin.mockRejectedValue(new Error("Identifiants invalides."))
-    const { result } = renderHook(() => useAuth())
+  // Le message de l'API est en anglais quelle que soit la langue de l'app : on
+  // traduit à partir du statut plutôt que de l'afficher tel quel.
+  it("translates a 401 instead of showing the API message", async () => {
+    mockedLogin.mockRejectedValue(new ApiError(401, "Invalid credentials"))
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
       await result.current.login("jean@example.com", "wrong")
     })
 
-    expect(result.current.error).toBe("Identifiants invalides.")
+    expect(result.current.error).toBe(en.errors.invalidCredentials)
     expect(result.current.session).toBeNull()
   })
 
-  it("falls back to a generic message for a non-Error rejection", async () => {
+  it("falls back to a generic message for any other rejection", async () => {
     mockedLogin.mockRejectedValue("boom")
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
       await result.current.login("jean@example.com", "wrong")
     })
 
-    expect(result.current.error).toBe("Erreur de connexion.")
+    expect(result.current.error).toBe(en.errors.serverError)
   })
 })
 
 describe("useAuth — register", () => {
   it("stores the token on success", async () => {
     mockedRegister.mockResolvedValue(makeToken())
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -120,28 +143,28 @@ describe("useAuth — register", () => {
     expect(result.current.session?.name).toBe("Jean")
   })
 
-  it("surfaces the API error message", async () => {
-    mockedRegister.mockRejectedValue(new Error("Un compte existe déjà avec cet email."))
-    const { result } = renderHook(() => useAuth())
+  it("translates a 409 into the taken-email message", async () => {
+    mockedRegister.mockRejectedValue(new ApiError(409, "Email already in use"))
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
       await result.current.register("Jean", "jean@example.com", "password")
     })
 
-    expect(result.current.error).toBe("Un compte existe déjà avec cet email.")
+    expect(result.current.error).toBe(en.errors.emailTaken)
   })
 
-  it("falls back to a generic message for a non-Error rejection", async () => {
+  it("falls back to a generic message for any other rejection", async () => {
     mockedRegister.mockRejectedValue("boom")
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
       await result.current.register("Jean", "jean@example.com", "password")
     })
 
-    expect(result.current.error).toBe("Erreur d'inscription.")
+    expect(result.current.error).toBe(en.errors.serverError)
   })
 })
 
@@ -152,7 +175,7 @@ describe("useAuth — OAuth", () => {
       type: "success",
       url: `stayup://auth/callback?token=${token}`,
     })
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -167,7 +190,7 @@ describe("useAuth — OAuth", () => {
 
   it("stops loading when the user cancels", async () => {
     webBrowser.openAuthSessionAsync.mockResolvedValue({ type: "cancel" })
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -184,7 +207,7 @@ describe("useAuth — OAuth", () => {
       type: "success",
       url: "stayup://auth/callback",
     })
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -197,7 +220,7 @@ describe("useAuth — OAuth", () => {
 
   it("surfaces an OAuth failure", async () => {
     webBrowser.openAuthSessionAsync.mockRejectedValue(new Error("navigateur indisponible"))
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -207,9 +230,9 @@ describe("useAuth — OAuth", () => {
     expect(result.current.error).toBe("navigateur indisponible")
   })
 
-  it("falls back to a generic message for a non-Error rejection", async () => {
+  it("falls back to a generic message for any other rejection", async () => {
     webBrowser.openAuthSessionAsync.mockRejectedValue("boom")
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -223,7 +246,7 @@ describe("useAuth — OAuth", () => {
 describe("useAuth — logout", () => {
   it("clears the token and the session", async () => {
     secureStore.getItemAsync.mockResolvedValue(makeToken())
-    const { result } = renderHook(() => useAuth())
+    const { result } = renderAuth()
     await waitFor(() => expect(result.current.session).not.toBeNull())
 
     await act(async () => {

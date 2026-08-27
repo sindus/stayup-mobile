@@ -108,6 +108,14 @@ export const ja: Translations = {
     apiUrlReset: "初期設定に戻す",
     apiUrlInvalid: "有効なURLを入力してください。",
   },
+  // Messages d'erreur réseau/API, traduits comme le reste de l'interface.
+  errors: {
+    serverError: "問題が発生しました。もう一度お試しください。",
+    invalidCredentials: "メールアドレスまたはパスワードが正しくありません。",
+    emailTaken: "このメールアドレスはすでに使用されています。",
+    alreadySubscribed: "このフィードはすでにフォローしています。",
+    urlOtherProvider: "このURLは別のプロバイダーですでに追跡されています。",
+  },
   common: {
     delete: "削除",
     cancel: "キャンセル",
