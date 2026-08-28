@@ -164,4 +164,141 @@ describe("AddFluxSheet — fermeture", () => {
     fireEvent.press(screen.getByText("Annuler"))
     expect(onClose).toHaveBeenCalled()
   })
+
+  it("a tap inside the sheet does not bubble to the backdrop", async () => {
+    const { onClose } = await setup()
+    fireEvent.press(screen.getByText("Ajouter un flux"), { stopPropagation: jest.fn() })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+})
+
+describe("AddFluxSheet — mode toggle & guards", () => {
+  it("switches between the existing-flux list and the new-flux form", async () => {
+    mockedGetFluxes.mockResolvedValue([
+      { id: 1, url: "https://a.example.com", config: {}, created_at: "", is_subscribed: false },
+    ])
+    await setup()
+    fireEvent.press(screen.getByText("RSS"))
+    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+
+    fireEvent.press(screen.getByText("Ajouter un nouveau"))
+    await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
+
+    fireEvent.press(screen.getByText("Choisir un flux existant"))
+    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+  })
+
+  it("shows 'no flux available' when every flux is already followed", async () => {
+    mockedGetFluxes.mockResolvedValue([
+      { id: 1, url: "https://a.example.com", config: {}, created_at: "", is_subscribed: true },
+    ])
+    await setup()
+    fireEvent.press(screen.getByText("RSS"))
+    await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
+    fireEvent.press(screen.getByText("Choisir un flux existant"))
+    await waitFor(() => expect(screen.getByText("Aucun flux disponible")).toBeTruthy())
+  })
+
+  it("rejects an identifier that does not match the connector pattern", async () => {
+    await setup()
+    fireEvent.press(screen.getByText("RSS")) // pattern ^https?://.+
+    await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
+    fireEvent.changeText(firstInput(), "not-a-url")
+    fireEvent.press(screen.getByText("Ajouter"))
+    await waitFor(() => expect(screen.getByText("Ce champ est requis")).toBeTruthy())
+    expect(mockedAdd).not.toHaveBeenCalled()
+  })
+
+  it("fails closed when the token is missing (new flux)", async () => {
+    await setup()
+    fireEvent.changeText(firstInput(), "facebook/react")
+    secureStore.getItemAsync.mockResolvedValue(null)
+    fireEvent.press(screen.getByText("Ajouter"))
+    await waitFor(() => expect(screen.getByText("Token manquant")).toBeTruthy())
+    expect(mockedAdd).not.toHaveBeenCalled()
+  })
+
+  it("fails closed when the token is missing (existing flux)", async () => {
+    mockedGetFluxes.mockResolvedValue([
+      { id: 1, url: "https://a.example.com", config: {}, created_at: "", is_subscribed: false },
+    ])
+    await setup()
+    fireEvent.press(screen.getByText("RSS"))
+    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+    fireEvent.press(screen.getByText("https://a.example.com"))
+    secureStore.getItemAsync.mockResolvedValue(null)
+    fireEvent.press(screen.getByText("Ajouter"))
+    await waitFor(() => expect(screen.getByText("Token manquant")).toBeTruthy())
+    expect(mockedSubscribe).not.toHaveBeenCalled()
+  })
+
+  it("falls back to a generic message when a non-Error is thrown", async () => {
+    mockedAdd.mockRejectedValue("nope")
+    await setup()
+    fireEvent.changeText(firstInput(), "facebook/react")
+    fireEvent.press(screen.getByText("Ajouter"))
+    await waitFor(() => expect(screen.getByText("Une erreur est survenue.")).toBeTruthy())
+  })
+
+  it("falls back to a generic message when subscribing throws a non-Error", async () => {
+    mockedGetFluxes.mockResolvedValue([
+      { id: 1, url: "https://a.example.com", config: {}, created_at: "", is_subscribed: false },
+    ])
+    mockedSubscribe.mockRejectedValue("boom")
+    await setup()
+    fireEvent.press(screen.getByText("RSS"))
+    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+    fireEvent.press(screen.getByText("https://a.example.com"))
+    fireEvent.press(screen.getByText("Ajouter"))
+    await waitFor(() => expect(screen.getByText("Une erreur est survenue.")).toBeTruthy())
+  })
+})
+
+describe("AddFluxSheet — degraded auth & payloads", () => {
+  it("loads the connector list anonymously and skips the flux fetch when no token is stored", async () => {
+    secureStore.getItemAsync.mockResolvedValue(null)
+    const onClose = jest.fn()
+    const onSuccess = jest.fn()
+    renderWithProviders(
+      <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} />,
+    )
+    await waitFor(() => expect(screen.getByText("Changelog")).toBeTruthy())
+    expect(mockedGetConnectorProviders).toHaveBeenCalledWith("", API_URL)
+    expect(mockedGetFluxes).not.toHaveBeenCalled()
+  })
+
+  it("tolerates a flux endpoint that resolves nothing", async () => {
+    mockedGetFluxes.mockResolvedValue(undefined as never)
+    await setup()
+    await waitFor(() => expect(screen.getByText("GitHub repo (owner/repo or URL)")).toBeTruthy())
+  })
+
+  it("renders a provider that has no template, displayName or approval flag", async () => {
+    mockedGetConnectorProviders.mockResolvedValue([{ name: "custom", template: null }] as never)
+    const onClose = jest.fn()
+    const onSuccess = jest.fn()
+    renderWithProviders(
+      <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} />,
+    )
+    await waitFor(() => expect(screen.getByText("custom")).toBeTruthy())
+  })
+})
+
+describe("AddFluxSheet — network failures", () => {
+  it("renders no provider tiles when the connector list fails to load", async () => {
+    mockedGetConnectorProviders.mockRejectedValue(new Error("offline"))
+    const onClose = jest.fn()
+    const onSuccess = jest.fn()
+    renderWithProviders(
+      <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} />,
+    )
+    await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
+    expect(screen.queryByText("Changelog")).toBeNull()
+  })
+
+  it("treats a failed flux fetch as an empty list", async () => {
+    mockedGetFluxes.mockRejectedValue(new Error("boom"))
+    await setup()
+    await waitFor(() => expect(screen.getByText("GitHub repo (owner/repo or URL)")).toBeTruthy())
+  })
 })

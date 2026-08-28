@@ -90,6 +90,31 @@ describe("useFeed", () => {
     expect(result.current.error).toBe("Erreur de chargement.")
   })
 
+  it("keeps the feed usable when the connector templates fail to load", async () => {
+    mockedGetUserFeed.mockResolvedValue({
+      repositories: [
+        {
+          id: "link-1",
+          repository_id: 10,
+          provider: "rss",
+          url: "https://blog.example.com/feed",
+          config: {},
+          created_at: "2026-01-01",
+        },
+      ],
+      connectors: emptyConnectors,
+    })
+    mockedGetProviders.mockRejectedValue(new Error("templates offline"))
+
+    const { result } = renderHook(() => useFeed("user-1"))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.error).toBeNull()
+    expect(result.current.templates).toEqual({})
+    // no template → the identifier is the scheme-stripped url
+    expect(result.current.fluxes[0].identifier).toBe("blog.example.com/feed")
+  })
+
   it("refresh reloads the feed", async () => {
     mockedGetUserFeed.mockResolvedValue({ repositories: [], connectors: emptyConnectors })
     const { result } = renderHook(() => useFeed("user-1"))
