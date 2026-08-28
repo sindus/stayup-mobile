@@ -1,4 +1,4 @@
-import type { ConnectorItem, Provider, ScrapRepository } from "@/types"
+import type { ConnectorItem, Provider, ProviderFlux } from "@/types"
 
 export interface UserRepositoryItem {
   id: string
@@ -17,6 +17,10 @@ export interface UserFeedResponse {
 export interface ConnectorProvider {
   name: string
   displayName: string
+  /** `auto` : l'ajout d'un flux est immédiat ; `manual` : il passe par une demande. */
+  fluxApproval?: "auto" | "manual"
+  /** Manifeste d'affichage brut (provider_registry.template), relayé tel quel. */
+  template?: unknown
 }
 
 /** Erreur d'appel API porteuse du statut HTTP. Le message de l'API est en anglais
@@ -125,13 +129,19 @@ export async function getConnectorProviders(
   return data.providers
 }
 
+/** `{ repository }` (flux créé) ou `{ status: 'pending' }` (provider `manual` :
+ *  la demande part en file d'approbation admin). */
+export type AddRepositoryResult =
+  | { repository: { id: string; repository_id: number }; status?: undefined }
+  | { status: "pending" }
+
 export async function addUserRepository(
   userId: string,
   token: string,
   apiUrl: string,
   data: { provider: string; url: string; config: Record<string, unknown> },
-): Promise<void> {
-  await apiFetch(`/ui/users/${userId}/repositories`, token, apiUrl, {
+): Promise<AddRepositoryResult> {
+  return apiFetch<AddRepositoryResult>(`/ui/users/${userId}/repositories`, token, apiUrl, {
     method: "POST",
     body: JSON.stringify(data),
   })
@@ -148,34 +158,43 @@ export async function deleteUserRepository(
   })
 }
 
-export async function getScrapRepos(token: string, apiUrl: string): Promise<ScrapRepository[]> {
-  const data = await apiFetch<{ repos: ScrapRepository[] }>("/scrap", token, apiUrl)
-  return data.repos
+export async function getProviderFluxes(
+  provider: string,
+  token: string,
+  apiUrl: string,
+): Promise<ProviderFlux[]> {
+  const data = await apiFetch<{ fluxes: ProviderFlux[] }>(
+    `/providers/${provider}/fluxes`,
+    token,
+    apiUrl,
+  )
+  return data.fluxes
 }
 
-export async function subscribeScrap(repoId: number, token: string, apiUrl: string): Promise<void> {
-  await apiFetch<{ success: boolean }>(`/scrap/${repoId}/subscribe`, token, apiUrl, {
-    method: "POST",
-  })
-}
-
-export async function unsubscribeScrap(
-  repoId: number,
+export async function subscribeFlux(
+  provider: string,
+  id: number,
   token: string,
   apiUrl: string,
 ): Promise<void> {
-  await apiFetch<{ success: boolean }>(`/scrap/${repoId}/subscribe`, token, apiUrl, {
-    method: "DELETE",
-  })
+  await apiFetch<{ success: boolean }>(
+    `/providers/${provider}/fluxes/${id}/subscribe`,
+    token,
+    apiUrl,
+    { method: "POST" },
+  )
 }
 
-export async function createScrapRequest(
-  body: { url: string },
+export async function unsubscribeFlux(
+  provider: string,
+  id: number,
   token: string,
   apiUrl: string,
-): Promise<{ id: string }> {
-  return apiFetch<{ id: string }>("/scrap/requests", token, apiUrl, {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
+): Promise<void> {
+  await apiFetch<{ success: boolean }>(
+    `/providers/${provider}/fluxes/${id}/subscribe`,
+    token,
+    apiUrl,
+    { method: "DELETE" },
+  )
 }

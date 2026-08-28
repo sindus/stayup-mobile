@@ -4,15 +4,15 @@ import * as SecureStore from "expo-secure-store"
 import * as DocumentPicker from "expo-document-picker"
 import * as Sharing from "expo-sharing"
 import { ImportExportButtons } from "@/components/feed/ImportExportButtons"
-import { addUserRepository, getScrapRepos, subscribeScrap } from "@/lib/api"
+import { addUserRepository, getProviderFluxes, subscribeFlux } from "@/lib/api"
 import { buildOpml } from "@/lib/opml"
 import type { FeedFlux } from "@/hooks/useFeed"
 import { renderWithProviders } from "./render"
 
 jest.mock("@/lib/api", () => ({
   addUserRepository: jest.fn(),
-  getScrapRepos: jest.fn(),
-  subscribeScrap: jest.fn(),
+  getProviderFluxes: jest.fn(),
+  subscribeFlux: jest.fn(),
 }))
 
 jest.mock("expo-document-picker", () => ({ getDocumentAsync: jest.fn() }))
@@ -33,8 +33,8 @@ jest.mock("expo-file-system", () => ({
 
 const secureStore = SecureStore as unknown as { getItemAsync: jest.Mock }
 const mockedAdd = addUserRepository as jest.Mock
-const mockedGetScrapRepos = getScrapRepos as jest.Mock
-const mockedSubscribe = subscribeScrap as jest.Mock
+const mockedGetFluxes = getProviderFluxes as jest.Mock
+const mockedSubscribe = subscribeFlux as jest.Mock
 const mockedGetDocument = DocumentPicker.getDocumentAsync as jest.Mock
 const mockedIsAvailable = Sharing.isAvailableAsync as jest.Mock
 const mockedShare = Sharing.shareAsync as jest.Mock
@@ -63,7 +63,7 @@ function setup(fluxes: FeedFlux[] = []) {
 beforeEach(() => {
   jest.clearAllMocks()
   secureStore.getItemAsync.mockResolvedValue("token-1")
-  mockedGetScrapRepos.mockResolvedValue([])
+  mockedGetFluxes.mockResolvedValue([])
   mockedIsAvailable.mockResolvedValue(true)
 })
 
@@ -175,7 +175,7 @@ describe("import", () => {
         "StayUp",
       ),
     )
-    mockedGetScrapRepos.mockResolvedValue([])
+    mockedGetFluxes.mockResolvedValue([])
     setup([])
 
     fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
@@ -204,7 +204,7 @@ describe("import", () => {
         "StayUp",
       ),
     )
-    mockedGetScrapRepos.mockResolvedValue([
+    mockedGetFluxes.mockResolvedValue([
       {
         id: 7,
         url: "https://news.ycombinator.com",
@@ -217,7 +217,9 @@ describe("import", () => {
 
     fireEvent.press(screen.getByLabelText("Importer des flux"), { stopPropagation: jest.fn() })
 
-    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith(7, "token-1", API_URL))
+    await waitFor(() =>
+      expect(mockedSubscribe).toHaveBeenCalledWith("scrap", 7, "token-1", API_URL),
+    )
     expect(alertSpy).toHaveBeenCalledWith("Importer des flux", "1 ajouté(s)")
   })
 

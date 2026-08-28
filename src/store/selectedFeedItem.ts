@@ -1,14 +1,34 @@
 import { create } from "zustand"
 import type { TaggedItem } from "@/types"
+import type { ProviderTemplate } from "@/lib/providerTemplate"
 
 interface SelectedFeedItemState {
   item: TaggedItem | null
   repoUrl: string
-  setItem: (item: TaggedItem | null, repoUrl?: string) => void
+  /** Template d'affichage du provider de l'item ouvert (null = rendu générique). */
+  template: ProviderTemplate | null
+  /** Source (repository) de l'item, telle qu'un template la lit via `$source.*`. */
+  source: Record<string, unknown> | undefined
+  setItem: (
+    item: TaggedItem | null,
+    opts?: {
+      repoUrl?: string
+      template?: ProviderTemplate | null
+      source?: Record<string, unknown>
+    },
+  ) => void
 }
 
 export const useSelectedFeedItemStore = create<SelectedFeedItemState>()((set) => ({
   item: null,
   repoUrl: "",
-  setItem: (item, repoUrl = "") => set({ item, repoUrl }),
+  template: null,
+  source: undefined,
+  setItem: (item, opts = {}) =>
+    set({
+      item,
+      repoUrl: opts.repoUrl ?? "",
+      template: opts.template ?? null,
+      source: opts.source,
+    }),
 }))

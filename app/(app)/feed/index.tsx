@@ -22,7 +22,7 @@ export default function FeedScreen() {
   const { session } = useAuth()
   const { t } = useLanguage()
   const userId = session?.userId ?? ""
-  const { fluxes, connectors, loading, error, refresh } = useFeed(userId)
+  const { fluxes, connectors, templates, loading, error, refresh } = useFeed(userId)
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
   const [filterState, setFilterState] = useState<{ providerId: Provider | null; mode: FilterMode }>(
     {
@@ -78,15 +78,12 @@ export default function FeedScreen() {
   )
 
   function handlePressItem(tagged: TaggedItem) {
-    const repoUrl =
-      "repository_id" in tagged.item
-        ? ((
-            (fluxes ?? []).find(
-              (r: { repository_id: number }) => r.repository_id === tagged.item.repository_id,
-            ) as { url: string } | undefined
-          )?.url ?? "")
-        : ""
-    setItem(tagged, repoUrl)
+    const flux = (fluxes ?? []).find((r) => r.repository_id === tagged.item.repository_id)
+    setItem(tagged, {
+      repoUrl: flux?.url ?? "",
+      template: templates[tagged.provider]?.template ?? null,
+      source: flux ? { url: flux.url, type: flux.provider, config: {} } : undefined,
+    })
     router.push("/feed/detail")
   }
 
@@ -123,6 +120,7 @@ export default function FeedScreen() {
     <SafeAreaView className="flex-1 bg-bg" edges={["top"]}>
       <FeedFluxList
         fluxes={fluxes}
+        templates={templates}
         userId={userId}
         selectedProvider={selectedProvider}
         onSelectProvider={setSelectedProvider}
@@ -190,6 +188,7 @@ export default function FeedScreen() {
 
       <UnifiedFeedList
         items={filteredItems}
+        templates={templates}
         repositories={fluxes}
         loading={loading}
         onRefresh={refresh}

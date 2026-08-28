@@ -1,17 +1,20 @@
 import { renderHook, waitFor, act } from "@testing-library/react-native"
 import * as SecureStore from "expo-secure-store"
 import { useFeed } from "@/hooks/useFeed"
-import { getUserFeed } from "@/lib/api"
+import { getUserFeed, getConnectorProviders } from "@/lib/api"
+import { RAW_PROVIDERS } from "./_templates"
 
-jest.mock("@/lib/api", () => ({ getUserFeed: jest.fn() }))
+jest.mock("@/lib/api", () => ({ getUserFeed: jest.fn(), getConnectorProviders: jest.fn() }))
 
 const secureStore = SecureStore as unknown as { getItemAsync: jest.Mock }
 const mockedGetUserFeed = getUserFeed as jest.Mock
+const mockedGetProviders = getConnectorProviders as jest.Mock
 
 const emptyConnectors = { changelog: [], youtube: [], rss: [], scrap: [] }
 
 beforeEach(() => {
   secureStore.getItemAsync.mockResolvedValue("tok")
+  mockedGetProviders.mockResolvedValue(RAW_PROVIDERS as never)
 })
 
 describe("useFeed", () => {
@@ -47,7 +50,7 @@ describe("useFeed", () => {
         repository_id: 10,
         provider: "changelog",
         url: "https://github.com/facebook/react/",
-        identifier: "facebook/react",
+        identifier: "facebook/react", // display.feedLabel: urlSlug($source.url)
       },
       {
         id: "link-2",
@@ -58,6 +61,7 @@ describe("useFeed", () => {
       },
     ])
     expect(result.current.connectors).toEqual(emptyConnectors)
+    expect(result.current.templates.changelog?.template?.display?.name).toBe("Changelog")
     expect(result.current.error).toBeNull()
   })
 

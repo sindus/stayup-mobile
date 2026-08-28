@@ -131,7 +131,7 @@ describe("useFeedReaderStore", () => {
 describe("useSelectedFeedItemStore", () => {
   it("stores the item and its repository url", () => {
     const item = rssItem(3)
-    useSelectedFeedItemStore.getState().setItem(item, "https://example.com")
+    useSelectedFeedItemStore.getState().setItem(item, { repoUrl: "https://example.com" })
 
     expect(useSelectedFeedItemStore.getState().item).toBe(item)
     expect(useSelectedFeedItemStore.getState().repoUrl).toBe("https://example.com")
@@ -143,7 +143,7 @@ describe("useSelectedFeedItemStore", () => {
   })
 
   it("clears the selection", () => {
-    useSelectedFeedItemStore.getState().setItem(rssItem(5), "https://example.com")
+    useSelectedFeedItemStore.getState().setItem(rssItem(5), { repoUrl: "https://example.com" })
     useSelectedFeedItemStore.getState().setItem(null)
 
     expect(useSelectedFeedItemStore.getState().item).toBeNull()

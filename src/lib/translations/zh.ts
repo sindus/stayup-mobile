@@ -78,7 +78,7 @@ export const zh: Translations = {
     requiredError: "此字段为必填项",
     selectError: "请选择一个订阅源",
     loading: "加载中…",
-    makeRequest: "提交请求",
+    makeRequest: "新增",
     chooseExisting: "选择现有订阅源",
     requestUrl: "要抓取的URL",
     requestUrlPlaceholder: "https://example.com/blog",
@@ -94,6 +94,7 @@ export const zh: Translations = {
     watchOnYoutube: "在YouTube上观看",
     readArticle: "阅读文章",
     visitWebsite: "访问网站",
+    openLink: "打开链接",
   },
   profile: {
     title: "个人资料",

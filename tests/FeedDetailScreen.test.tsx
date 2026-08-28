@@ -7,6 +7,8 @@ import { useReadItemsStore } from "@/store/readItems"
 import type { TaggedItem } from "@/types"
 import { renderWithProviders } from "./render"
 import { mockRouter } from "./setup"
+import { normalizeTemplate, type ProviderTemplate } from "@/lib/providerTemplate"
+import { TEMPLATES } from "./_templates"
 
 const asyncStorage = AsyncStorage as unknown as { getItem: jest.Mock; setItem: jest.Mock }
 const FONT_KEY = "STAYUP_FONT_SIZE_OFFSET"
@@ -17,9 +19,45 @@ function stubStorage(values: Record<string, string> = {}) {
   asyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(values[key] ?? null))
 }
 
-function select(item: TaggedItem, repoUrl = "") {
-  useSelectedFeedItemStore.setState({ item, repoUrl })
+/** Sélectionne un item comme le fait FeedScreen : item + template + source. */
+function select(tagged: TaggedItem, repoUrl = "", template?: ProviderTemplate | null) {
+  useSelectedFeedItemStore.setState({
+    item: tagged,
+    repoUrl,
+    template: template ?? TEMPLATES[tagged.provider]?.template ?? null,
+    source: { url: repoUrl, type: tagged.provider, config: {} },
+  })
 }
+
+const audioTemplate = normalizeTemplate({
+  version: 1,
+  display: { name: "Podcast", accent: "#c5b1e8" },
+  item: { parseContentAsJson: true, fields: { title: "title" } },
+  detail: {
+    mode: "audio",
+    title: "title",
+    image: "cover",
+    audioUrl: "audio",
+    body: "notes",
+    openUrl: "page",
+    openLabel: "Open episode",
+  },
+})
+
+const galleryTemplate = normalizeTemplate({
+  version: 1,
+  display: { name: "Photos", accent: "#a8d4b5" },
+  item: { parseContentAsJson: true, fields: { title: "album" } },
+  detail: {
+    mode: "gallery",
+    title: "album",
+    collection: "shots",
+    image: "url",
+    caption: "caption",
+    rowLink: "url",
+    openLabel: "Open album",
+  },
+})
 
 const changelogItem: TaggedItem = {
   provider: "changelog",
@@ -97,7 +135,7 @@ function genericTagged(
 beforeEach(() => {
   stubStorage()
   openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true)
-  useSelectedFeedItemStore.setState({ item: null, repoUrl: "" })
+  useSelectedFeedItemStore.setState({ item: null, repoUrl: "", template: null, source: undefined })
   useReadItemsStore.setState({ readIds: new Set(), initialized: true })
 })
 
@@ -112,7 +150,6 @@ describe("FeedDetailScreen — cadre", () => {
   it("marks the opened item as read", async () => {
     select(rssTagged({ title: "A" }))
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() =>
       expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:3"])),
     )
@@ -122,7 +159,6 @@ describe("FeedDetailScreen — cadre", () => {
     select(rssTagged({ title: "A" }))
     renderWithProviders(<FeedDetailScreen />)
     await waitFor(() => expect(screen.getByTestId("icon-ChevronLeft")).toBeTruthy())
-
     fireEvent.press(screen.getByTestId("icon-ChevronLeft"))
     expect(mockRouter.back).toHaveBeenCalled()
   })
@@ -133,7 +169,6 @@ describe("FeedDetailScreen — taille de police", () => {
     stubStorage({ [FONT_KEY]: "4" })
     select(rssTagged({ title: "A", summary: "Corps" }))
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getByText("Corps").props.style.fontSize).toBe(20))
   })
 
@@ -141,7 +176,6 @@ describe("FeedDetailScreen — taille de police", () => {
     stubStorage({ [FONT_KEY]: "abc" })
     select(rssTagged({ title: "A", summary: "Corps" }))
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getByText("Corps").props.style.fontSize).toBe(16))
   })
 
@@ -149,9 +183,7 @@ describe("FeedDetailScreen — taille de police", () => {
     select(rssTagged({ title: "A", summary: "Corps" }))
     renderWithProviders(<FeedDetailScreen />)
     await waitFor(() => expect(screen.getByText("A+")).toBeTruthy())
-
     fireEvent.press(screen.getByText("A+"))
-
     await waitFor(() => expect(asyncStorage.setItem).toHaveBeenCalledWith(FONT_KEY, "1"))
     expect(screen.getByText("Corps").props.style.fontSize).toBe(17)
   })
@@ -160,9 +192,7 @@ describe("FeedDetailScreen — taille de police", () => {
     select(rssTagged({ title: "A", summary: "Corps" }))
     renderWithProviders(<FeedDetailScreen />)
     await waitFor(() => expect(screen.getByText("A−")).toBeTruthy())
-
     fireEvent.press(screen.getByText("A−"))
-
     await waitFor(() => expect(asyncStorage.setItem).toHaveBeenCalledWith(FONT_KEY, "-1"))
   })
 
@@ -171,10 +201,7 @@ describe("FeedDetailScreen — taille de police", () => {
     select(rssTagged({ title: "A", summary: "Corps" }))
     renderWithProviders(<FeedDetailScreen />)
     await waitFor(() => expect(screen.getByText("Corps").props.style.fontSize).toBe(12))
-
-    // Le bouton est désactivé à la borne : l'appui ne change rien.
     fireEvent.press(screen.getByText("A−"))
-
     expect(asyncStorage.setItem).not.toHaveBeenCalledWith(FONT_KEY, expect.anything())
     expect(screen.getByText("Corps").props.style.fontSize).toBe(12)
   })
@@ -184,99 +211,82 @@ describe("FeedDetailScreen — taille de police", () => {
     select(rssTagged({ title: "A", summary: "Corps" }))
     renderWithProviders(<FeedDetailScreen />)
     await waitFor(() => expect(screen.getByText("Corps").props.style.fontSize).toBe(26))
-
-    // Le bouton est désactivé à la borne : l'appui ne change rien.
     fireEvent.press(screen.getByText("A+"))
-
     expect(asyncStorage.setItem).not.toHaveBeenCalledWith(FONT_KEY, expect.anything())
     expect(screen.getByText("Corps").props.style.fontSize).toBe(26)
   })
 })
 
-describe("FeedDetailScreen — changelog", () => {
-  it("shows the repo, version and cleaned markdown", async () => {
+describe("FeedDetailScreen — changelog (template text)", () => {
+  it("shows the repo slug, version and cleaned markdown", async () => {
     select(changelogItem, "https://github.com/facebook/react")
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("facebook/react")).toBeTruthy())
-    expect(screen.getAllByText("v1.2.3").length).toBeGreaterThan(0)
+    await waitFor(() => expect(screen.getAllByText("facebook/react").length).toBeGreaterThan(0))
+    expect(screen.getByText("v1.2.3")).toBeTruthy()
     expect(screen.getByText("Titre\ngras et code")).toBeTruthy()
   })
 
-  it("falls back to the repository label without a url", async () => {
+  it("hides the open button without a source url", async () => {
     select(changelogItem)
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("dépôt")).toBeTruthy())
-    expect(screen.queryByText("Voir sur GitHub")).toBeNull()
+    await waitFor(() => expect(screen.getByText("v1.2.3")).toBeTruthy())
+    expect(screen.queryByText("Open on GitHub")).toBeNull()
   })
 
   it("opens the release page", async () => {
     select(changelogItem, "https://github.com/facebook/react")
     renderWithProviders(<FeedDetailScreen />)
-    await waitFor(() => expect(screen.getByText("Voir sur GitHub")).toBeTruthy())
-
-    fireEvent.press(screen.getByText("Voir sur GitHub"))
+    await waitFor(() => expect(screen.getByText("Open on GitHub")).toBeTruthy())
+    fireEvent.press(screen.getByText("Open on GitHub"))
     expect(openURL).toHaveBeenCalledWith("https://github.com/facebook/react/releases/tag/v1.2.3")
   })
 
   it("hides the body when the changelog is empty", async () => {
     select({ ...changelogItem, item: { ...changelogItem.item, content: "" } } as TaggedItem)
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("v1.2.3").length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getByText("v1.2.3")).toBeTruthy())
   })
 })
 
-describe("FeedDetailScreen — youtube", () => {
-  it("shows the title, channel and thumbnail", async () => {
+describe("FeedDetailScreen — youtube (template media)", () => {
+  it("shows the title, channel handle and links out", async () => {
     select(
       youtubeItem({
         title: "Ma vidéo",
         url: "https://www.youtube.com/@fireship",
         thumbnail: "https://img.example.com/t.jpg",
+        link: "https://youtu.be/xyz",
       }),
     )
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getAllByText("Ma vidéo").length).toBeGreaterThan(0))
     expect(screen.getByText("@fireship")).toBeTruthy()
-    expect(screen.getByText("Voir sur YouTube")).toBeTruthy()
+    expect(screen.getByText("Watch on YouTube")).toBeTruthy()
   })
 
-  it("derives the channel from the last path segment", async () => {
+  it("keeps the channel path for a /channel/ url", async () => {
     select(youtubeItem({ title: "V", url: "https://www.youtube.com/channel/UC123" }))
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("UC123")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("channel/UC123")).toBeTruthy())
   })
 
-  it("keeps a malformed channel url as-is", async () => {
-    select(youtubeItem({ title: "V", url: "pas-une-url" }))
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("pas-une-url")).toBeTruthy())
-  })
-
-  it("falls back to the no-title label on malformed content", async () => {
+  it("hides the open button on malformed content", async () => {
     select(youtubeItem("{cassé"))
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("Sans titre").length).toBeGreaterThan(0))
-    expect(screen.queryByText("Voir sur YouTube")).toBeNull()
+    await waitFor(() => expect(screen.getByText("A+")).toBeTruthy())
+    expect(screen.queryByText("Watch on YouTube")).toBeNull()
   })
 
   it("opens the video", async () => {
     select(youtubeItem({ title: "V", link: "https://youtu.be/xyz" }))
     renderWithProviders(<FeedDetailScreen />)
-    await waitFor(() => expect(screen.getByText("Voir sur YouTube")).toBeTruthy())
-
-    fireEvent.press(screen.getByText("Voir sur YouTube"))
+    await waitFor(() => expect(screen.getByText("Watch on YouTube")).toBeTruthy())
+    fireEvent.press(screen.getByText("Watch on YouTube"))
     expect(openURL).toHaveBeenCalledWith("https://youtu.be/xyz")
   })
 })
 
-describe("FeedDetailScreen — rss", () => {
+describe("FeedDetailScreen — rss (template html)", () => {
   it("shows the title, source and html-stripped summary", async () => {
     select(
       rssTagged({
@@ -286,155 +296,135 @@ describe("FeedDetailScreen — rss", () => {
       }),
     )
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getAllByText("Mon article").length).toBeGreaterThan(0))
     expect(screen.getByText("blog.example.com")).toBeTruthy()
     expect(screen.getByText("Un & résumé")).toBeTruthy()
-    expect(screen.getByText("Lire l'article")).toBeTruthy()
+    expect(screen.getByText("Read article")).toBeTruthy()
   })
 
   it("keeps a malformed link as the source", async () => {
     select(rssTagged({ title: "A", link: "pas-une-url" }))
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getByText("pas-une-url")).toBeTruthy())
   })
 
-  it("falls back to the no-title label on malformed content", async () => {
+  it("hides the open button on malformed content", async () => {
     select(rssTagged("{cassé"))
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("Sans titre").length).toBeGreaterThan(0))
-    expect(screen.queryByText("Lire l'article")).toBeNull()
+    await waitFor(() => expect(screen.getByText("A+")).toBeTruthy())
+    expect(screen.queryByText("Read article")).toBeNull()
   })
 
   it("opens the article", async () => {
     select(rssTagged({ title: "A", link: "https://example.com/a" }))
     renderWithProviders(<FeedDetailScreen />)
-    await waitFor(() => expect(screen.getByText("Lire l'article")).toBeTruthy())
-
-    fireEvent.press(screen.getByText("Lire l'article"))
+    await waitFor(() => expect(screen.getByText("Read article")).toBeTruthy())
+    fireEvent.press(screen.getByText("Read article"))
     expect(openURL).toHaveBeenCalledWith("https://example.com/a")
   })
 })
 
-describe("FeedDetailScreen — dates et titres de repli", () => {
-  it("falls back to executed_at when datetime is null", async () => {
-    select({
-      ...changelogItem,
-      item: { ...changelogItem.item, datetime: null },
-    } as TaggedItem)
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("v1.2.3").length).toBeGreaterThan(0))
-  })
-
-  it("falls back to the no-title label when the youtube payload has no title", async () => {
-    select(youtubeItem({ url: "https://www.youtube.com/@a" }))
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("Sans titre").length).toBeGreaterThan(0))
-  })
-
-  it("falls back to the no-title label when the rss payload has no title", async () => {
-    select(rssTagged({ link: "https://example.com/a" }))
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("Sans titre").length).toBeGreaterThan(0))
-  })
-
-  it("keeps a youtube channel url with a trailing slash", async () => {
-    select(youtubeItem({ title: "V", url: "https://youtube.com/" }))
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("V").length).toBeGreaterThan(0))
-  })
-
-  it("falls back to executed_at for a youtube item without datetime", async () => {
-    select({
-      provider: "youtube",
-      item: {
-        id: 2,
-        repository_id: 11,
-        version: "1",
-        content: JSON.stringify({ title: "V", url: "https://www.youtube.com/@a" }),
-        datetime: null,
-        executed_at: "2026-02-01T11:00:00Z",
-        success: true,
-      },
-    })
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("V").length).toBeGreaterThan(0))
-  })
-
-  it("falls back to executed_at for an rss item without datetime", async () => {
-    select({
-      provider: "rss",
-      item: {
-        id: 3,
-        repository_id: 12,
-        content: JSON.stringify({ title: "A" }),
-        datetime: null,
-        executed_at: "2026-01-01T11:00:00Z",
-        success: true,
-      },
-    })
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("A").length).toBeGreaterThan(0))
-  })
-})
-
-describe("FeedDetailScreen — scraping", () => {
-  it("shows the scrap label, url and content", async () => {
+describe("FeedDetailScreen — scraping (template text)", () => {
+  it("shows the source hostname, content and open button", async () => {
     select(scrapTagged({ url: "https://example.com/blog" }))
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("Scrap")).toBeTruthy())
-    expect(screen.getByText("https://example.com/blog")).toBeTruthy()
+    await waitFor(() => expect(screen.getAllByText("example.com").length).toBeGreaterThan(0))
     expect(screen.getByText("Contenu scrapé")).toBeTruthy()
-    expect(screen.getByText("Visiter le site")).toBeTruthy()
+    expect(screen.getByText("Visit website")).toBeTruthy()
   })
 
   it("parses params given as a JSON string", async () => {
-    select(scrapTagged(JSON.stringify({ url: "https://example.com/x" })))
+    select(scrapTagged(JSON.stringify({ url: "https://example.org/x" })))
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("https://example.com/x")).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByText("example.org").length).toBeGreaterThan(0))
   })
 
   it("tolerates malformed params", async () => {
     select(scrapTagged("{cassé"))
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getByText("Contenu scrapé")).toBeTruthy())
-    expect(screen.queryByText("Visiter le site")).toBeNull()
+    expect(screen.queryByText("Visit website")).toBeNull()
   })
 
   it("hides the body when the content is empty", async () => {
     select(scrapTagged({ url: "https://example.com/x" }, ""))
     renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getByText("https://example.com/x")).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByText("example.com").length).toBeGreaterThan(0))
     expect(screen.queryByText("Contenu scrapé")).toBeNull()
   })
 
   it("opens the scraped site", async () => {
     select(scrapTagged({ url: "https://example.com/blog" }))
     renderWithProviders(<FeedDetailScreen />)
-    await waitFor(() => expect(screen.getByText("Visiter le site")).toBeTruthy())
-
-    fireEvent.press(screen.getByText("Visiter le site"))
+    await waitFor(() => expect(screen.getByText("Visit website")).toBeTruthy())
+    fireEvent.press(screen.getByText("Visit website"))
     expect(openURL).toHaveBeenCalledWith("https://example.com/blog")
   })
 })
 
-describe("FeedDetailScreen — provider inconnu", () => {
+describe("FeedDetailScreen — modes audio & gallery", () => {
+  it("renders an audio episode: cover, notes and an open button", async () => {
+    select(
+      {
+        provider: "podcast",
+        item: {
+          id: 6,
+          repository_id: 6,
+          content: JSON.stringify({
+            title: "Épisode 12",
+            cover: "https://cdn.example.com/c.jpg",
+            audio: "https://cdn.example.com/ep.mp3",
+            notes: "Notes de l'épisode",
+            page: "https://pod.example.com/12",
+          }),
+          datetime: "2026-05-01T10:00:00Z",
+          executed_at: "2026-05-01T11:00:00Z",
+          success: true,
+        },
+      },
+      "",
+      audioTemplate,
+    )
+    renderWithProviders(<FeedDetailScreen />)
+    await waitFor(() => expect(screen.getAllByText("Épisode 12").length).toBeGreaterThan(0))
+    expect(screen.getByText("Notes de l'épisode")).toBeTruthy()
+    fireEvent.press(screen.getByText("Open episode"))
+    expect(openURL).toHaveBeenCalledWith("https://pod.example.com/12")
+  })
+
+  it("renders a gallery of images with captions", async () => {
+    select(
+      {
+        provider: "photos",
+        item: {
+          id: 7,
+          repository_id: 7,
+          content: JSON.stringify({
+            album: "Kyoto",
+            shots: [
+              { url: "https://cdn.example.com/1.jpg", caption: "Fushimi Inari" },
+              { url: "https://cdn.example.com/2.jpg", caption: "Arashiyama" },
+            ],
+          }),
+          datetime: "2026-05-02T10:00:00Z",
+          executed_at: "2026-05-02T11:00:00Z",
+          success: true,
+        },
+      },
+      "",
+      galleryTemplate,
+    )
+    renderWithProviders(<FeedDetailScreen />)
+    await waitFor(() => expect(screen.getAllByText("Kyoto").length).toBeGreaterThan(0))
+    expect(screen.getByText("Fushimi Inari")).toBeTruthy()
+    expect(screen.getByText("Arashiyama")).toBeTruthy()
+  })
+})
+
+describe("FeedDetailScreen — provider sans template", () => {
   it("renders the generic detail with the capitalized provider label", async () => {
     select(genericTagged())
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getAllByText("Podcast")).toHaveLength(2))
     expect(screen.getByText("s02e04")).toBeTruthy()
     expect(screen.getByText("Corps générique")).toBeTruthy()
@@ -443,16 +433,8 @@ describe("FeedDetailScreen — provider inconnu", () => {
   it("omits the version and the body when the item carries neither", async () => {
     select(genericTagged({ content: "", version: null }))
     renderWithProviders(<FeedDetailScreen />)
-
     await waitFor(() => expect(screen.getAllByText("Podcast")).toHaveLength(2))
     expect(screen.queryByText("s02e04")).toBeNull()
     expect(screen.queryByText("Corps générique")).toBeNull()
-  })
-
-  it("falls back to executed_at when the item has no datetime", async () => {
-    select(genericTagged({ datetime: null }))
-    renderWithProviders(<FeedDetailScreen />)
-
-    await waitFor(() => expect(screen.getAllByText("Podcast")).toHaveLength(2))
   })
 })

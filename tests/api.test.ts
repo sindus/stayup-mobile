@@ -5,10 +5,9 @@ import {
   getConnectorProviders,
   addUserRepository,
   deleteUserRepository,
-  getScrapRepos,
-  subscribeScrap,
-  unsubscribeScrap,
-  createScrapRequest,
+  getProviderFluxes,
+  subscribeFlux,
+  unsubscribeFlux,
 } from "../src/lib/api"
 
 const API_URL = "https://stayup-api.r-sik.workers.dev"
@@ -165,41 +164,30 @@ describe("repository mutations", () => {
   })
 })
 
-describe("scrap endpoints", () => {
-  it("unwraps the repos list", async () => {
-    mockFetch(200, { repos: [{ id: 1, url: "https://example.com" }] })
-    const repos = await getScrapRepos("tok", API_URL)
-    expect(repos).toHaveLength(1)
-    expect(repos[0].id).toBe(1)
+describe("provider flux endpoints", () => {
+  it("unwraps the fluxes list", async () => {
+    mockFetch(200, { fluxes: [{ id: 1, url: "https://example.com" }] })
+    const fluxes = await getProviderFluxes("rss", "tok", API_URL)
+    expect(fluxes).toHaveLength(1)
+    expect(fluxes[0].id).toBe(1)
   })
 
-  it("subscribes with POST", async () => {
+  it("subscribes with POST to the provider subscribe endpoint", async () => {
     mockFetch(200, { success: true })
-    await subscribeScrap(3, "tok", API_URL)
+    await subscribeFlux("rss", 3, "tok", API_URL)
 
     const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
-    expect(url).toBe(`${API_URL}/scrap/3/subscribe`)
+    expect(url).toBe(`${API_URL}/providers/rss/fluxes/3/subscribe`)
     expect(init.method).toBe("POST")
   })
 
   it("unsubscribes with DELETE", async () => {
     mockFetch(200, { success: true })
-    await unsubscribeScrap(3, "tok", API_URL)
+    await unsubscribeFlux("rss", 3, "tok", API_URL)
 
     const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
-    expect(url).toBe(`${API_URL}/scrap/3/subscribe`)
+    expect(url).toBe(`${API_URL}/providers/rss/fluxes/3/subscribe`)
     expect(init.method).toBe("DELETE")
-  })
-
-  it("creates a scrap request", async () => {
-    mockFetch(200, { id: "req-1" })
-    await expect(
-      createScrapRequest({ url: "https://example.com" }, "tok", API_URL),
-    ).resolves.toEqual({ id: "req-1" })
-
-    const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
-    expect(url).toBe(`${API_URL}/scrap/requests`)
-    expect(JSON.parse(init.body).url).toBe("https://example.com")
   })
 })
 

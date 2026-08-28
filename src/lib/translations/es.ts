@@ -78,7 +78,7 @@ export const es: Translations = {
     requiredError: "Este campo es obligatorio",
     selectError: "Selecciona un feed",
     loading: "Cargando…",
-    makeRequest: "Hacer una solicitud",
+    makeRequest: "Añadir uno nuevo",
     chooseExisting: "Elegir un feed existente",
     requestUrl: "URL a extraer",
     requestUrlPlaceholder: "https://example.com/blog",
@@ -94,6 +94,7 @@ export const es: Translations = {
     watchOnYoutube: "Ver en YouTube",
     readArticle: "Leer artículo",
     visitWebsite: "Visitar sitio web",
+    openLink: "Abrir el enlace",
   },
   profile: {
     title: "Perfil",

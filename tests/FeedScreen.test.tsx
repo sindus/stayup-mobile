@@ -2,24 +2,27 @@ import { screen, fireEvent, waitFor } from "@testing-library/react-native"
 import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import FeedScreen from "../app/(app)/feed/index"
-import { getUserFeed } from "@/lib/api"
+import { getUserFeed, getConnectorProviders } from "@/lib/api"
 import { useReadItemsStore } from "@/store/readItems"
 import { useSelectedFeedItemStore } from "@/store/selectedFeedItem"
 import { renderWithProviders } from "./render"
 import { mockRouter } from "./setup"
+import { RAW_PROVIDERS } from "./_templates"
 
 jest.mock("@/lib/api", () => ({
   getUserFeed: jest.fn(),
+  getConnectorProviders: jest.fn(),
   deleteUserRepository: jest.fn(),
   addUserRepository: jest.fn(),
-  createScrapRequest: jest.fn(),
-  getScrapRepos: jest.fn().mockResolvedValue([]),
-  subscribeScrap: jest.fn(),
+
+  getProviderFluxes: jest.fn().mockResolvedValue([]),
+  subscribeFlux: jest.fn(),
 }))
 
 const secureStore = SecureStore as unknown as { getItemAsync: jest.Mock }
 const asyncStorage = AsyncStorage as unknown as { getItem: jest.Mock; setItem: jest.Mock }
 const mockedGetUserFeed = getUserFeed as jest.Mock
+const mockedGetProviders = getConnectorProviders as jest.Mock
 
 function validToken(): string {
   const payload = {
@@ -75,8 +78,9 @@ beforeEach(() => {
   secureStore.getItemAsync.mockResolvedValue(validToken())
   stubStorage()
   mockedGetUserFeed.mockResolvedValue(feedResponse())
+  mockedGetProviders.mockResolvedValue(RAW_PROVIDERS)
   useReadItemsStore.setState({ readIds: new Set(), initialized: false })
-  useSelectedFeedItemStore.setState({ item: null, repoUrl: "" })
+  useSelectedFeedItemStore.setState({ item: null, repoUrl: "", template: null, source: undefined })
 })
 
 describe("FeedScreen — chargement", () => {

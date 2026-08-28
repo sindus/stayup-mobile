@@ -6,13 +6,15 @@ import type { FeedFlux } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
 import { readToken, readApiUrl } from "@/lib/store"
-import { providerDisplayName, stripUrlScheme } from "@/lib/utils"
+import { stripUrlScheme } from "@/lib/utils"
 import { colors, getProviderMeta } from "@/theme"
-import { isKnownProvider } from "@/types"
+import { providerIcon } from "./providerIcons"
+import type { ProviderMeta } from "@/lib/providerTemplate"
 import type { Provider } from "@/types"
 
 interface FeedFluxListProps {
   fluxes: FeedFlux[]
+  templates: Record<string, ProviderMeta>
   userId: string
   selectedProvider: Provider | null
   onSelectProvider: (p: Provider | null) => void
@@ -24,6 +26,7 @@ interface FeedFluxListProps {
 
 export function FeedFluxList({
   fluxes,
+  templates,
   userId,
   selectedProvider,
   onSelectProvider,
@@ -39,8 +42,8 @@ export function FeedFluxList({
   // l'utilisateur, pas une liste fermée codée en dur.
   const providers = Array.from(new Set(fluxes.map((f) => f.provider)))
 
-  function providerLabel(p: Provider): string {
-    return isKnownProvider(p) ? t.feed.providers[p] : providerDisplayName(p)
+  function meta(p: Provider) {
+    return getProviderMeta(p, templates[p]?.template)
   }
 
   async function handleDelete(flux: FeedFlux) {
@@ -78,13 +81,10 @@ export function FeedFluxList({
           {!expanded && selectedProvider && (
             <View
               className="rounded-full px-2 py-0.5"
-              style={{ backgroundColor: getProviderMeta(selectedProvider).dim }}
+              style={{ backgroundColor: meta(selectedProvider).dim }}
             >
-              <Text
-                className="text-sm font-medium"
-                style={{ color: getProviderMeta(selectedProvider).color }}
-              >
-                {providerLabel(selectedProvider)}
+              <Text className="text-sm font-medium" style={{ color: meta(selectedProvider).color }}>
+                {meta(selectedProvider).label}
               </Text>
             </View>
           )}
@@ -146,17 +146,14 @@ export function FeedFluxList({
                   key={p}
                   onPress={() => onSelectProvider(active ? null : p)}
                   className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
-                  style={{ backgroundColor: active ? getProviderMeta(p).dim : colors.surface }}
+                  style={{ backgroundColor: active ? meta(p).dim : colors.surface }}
                 >
-                  <View
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: getProviderMeta(p).color }}
-                  />
+                  {providerIcon(templates[p]?.template?.display, 13, meta(p).color)}
                   <Text
                     className="text-base font-medium"
-                    style={{ color: active ? getProviderMeta(p).color : colors.fgSoft }}
+                    style={{ color: active ? meta(p).color : colors.fgSoft }}
                   >
-                    {providerLabel(p)}
+                    {meta(p).label}
                   </Text>
                   {providerUnread > 0 && (
                     <View

@@ -5,6 +5,7 @@ import { FeedFluxList } from "@/components/feed/FeedFluxList"
 import { deleteUserRepository } from "@/lib/api"
 import type { FeedFlux } from "@/hooks/useFeed"
 import { renderWithProviders } from "./render"
+import { TEMPLATES } from "./_templates"
 
 jest.mock("@/lib/api", () => ({ deleteUserRepository: jest.fn() }))
 
@@ -37,6 +38,7 @@ function setup(props: Partial<React.ComponentProps<typeof FeedFluxList>> = {}) {
   renderWithProviders(
     <FeedFluxList
       fluxes={fluxes}
+      templates={TEMPLATES}
       userId="user-1"
       selectedProvider={null}
       onSelectProvider={onSelectProvider}
@@ -60,7 +62,7 @@ describe("FeedFluxList", () => {
 
     await waitFor(() => expect(screen.getByText("Mes flux")).toBeTruthy())
     expect(screen.getByText("Tous les flux")).toBeTruthy()
-    expect(screen.getByText("GitHub")).toBeTruthy()
+    expect(screen.getByText("Changelog")).toBeTruthy()
     expect(screen.getByText("YouTube")).toBeTruthy()
     expect(screen.queryByText("RSS")).toBeNull()
     expect(screen.queryByText("Scraping web")).toBeNull()

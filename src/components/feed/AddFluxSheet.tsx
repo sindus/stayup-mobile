@@ -3,19 +3,20 @@ import { Modal, View, Text, TextInput, Pressable, ActivityIndicator } from "reac
 import { X } from "lucide-react-native"
 import {
   addUserRepository,
-  createScrapRequest,
   getConnectorProviders,
-  getScrapRepos,
-  subscribeScrap,
+  getProviderFluxes,
+  subscribeFlux,
 } from "@/lib/api"
 import { readApiUrl, readToken } from "@/lib/store"
-import { normalizeIdentifier, toRepositoryUrl } from "@/lib/utils"
 import { useLanguage } from "@/context/LanguageContext"
 import { colors, getProviderMeta } from "@/theme"
-import { isKnownProvider, type KnownProvider } from "@/types"
-import type { ScrapRepository } from "@/types"
-
-type FeedProvider = Exclude<KnownProvider, "scrap">
+import {
+  normalizeTemplate,
+  buildFluxUrl,
+  matchesFormPattern,
+  type ProviderTemplate,
+} from "@/lib/providerTemplate"
+import type { ProviderFlux } from "@/types"
 
 interface ProviderTile {
   id: string
@@ -35,16 +36,17 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
   const { t } = useLanguage()
   const [provider, setProvider] = useState<string>("changelog")
   const [identifier, setIdentifier] = useState("")
-  const [scrapRepoId, setScrapRepoId] = useState<number | null>(null)
-  const [scrapRepos, setScrapRepos] = useState<ScrapRepository[] | null>(null)
+  const [pickMode, setPickMode] = useState<"existing" | "new">("existing")
+  const [selectedFluxId, setSelectedFluxId] = useState<number | null>(null)
+  const [fluxes, setFluxes] = useState<ProviderFlux[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [scrapMode, setScrapMode] = useState<"select" | "request">("select")
-  const [requestUrl, setRequestUrl] = useState("")
-  const [requestSuccess, setRequestSuccess] = useState(false)
+  const [pending, setPending] = useState(false)
   const [tiles, setTiles] = useState<ProviderTile[]>([])
+  const [tpls, setTpls] = useState<Record<string, ProviderTemplate | null>>({})
+  const [approvals, setApprovals] = useState<Record<string, "auto" | "manual">>({})
 
-  // Liste des providers dynamique : vient de l'API, aucun nom n'est codé en dur ici.
+  // Liste des providers : vient de l'API, aucun nom codé en dur ici.
   useEffect(() => {
     if (!visible) return
     let cancelled = false
@@ -52,73 +54,90 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
       .then(([token, apiUrl]) => getConnectorProviders(token ?? "", apiUrl))
       .then((providers) => {
         if (cancelled) return
+        const parsed = providers.map((p) => ({ ...p, tpl: normalizeTemplate(p.template) }))
+        setTpls(Object.fromEntries(parsed.map((p) => [p.name, p.tpl])))
+        setApprovals(Object.fromEntries(parsed.map((p) => [p.name, p.fluxApproval ?? "auto"])))
         setTiles(
-          providers.map(({ name, displayName }) => {
-            const meta = getProviderMeta(name)
-            const label = isKnownProvider(name) ? t.feed.providers[name] : displayName
-            return { id: name, label, color: meta.color, dim: meta.dim }
+          parsed.map(({ name, displayName, tpl }) => {
+            const meta = getProviderMeta(name, tpl)
+            return {
+              id: name,
+              label:
+                tpl?.display?.name ??
+                t.feed.providers[name as keyof typeof t.feed.providers] ??
+                displayName ??
+                name,
+              color: meta.color,
+              dim: meta.dim,
+            }
           }),
         )
       })
       .catch(() => {
-        if (!cancelled) setTiles([])
+        if (!cancelled) {
+          setTiles([])
+          setTpls({})
+          setApprovals({})
+        }
       })
     return () => {
       cancelled = true
     }
   }, [visible, t])
 
+  // Flux existants du provider sélectionné.
   useEffect(() => {
-    if (provider !== "scrap") return
+    if (!visible) return
     let cancelled = false
     Promise.all([readToken(), readApiUrl()])
       .then(([token, apiUrl]) => {
         if (cancelled || !token) return []
-        return getScrapRepos(token, apiUrl)
+        return getProviderFluxes(provider, token, apiUrl)
       })
-      .then((repos) => {
-        if (!cancelled) setScrapRepos(repos ?? [])
+      .then((list) => {
+        if (cancelled) return
+        setFluxes(list ?? [])
+        setPickMode((list ?? []).some((f) => !f.is_subscribed) ? "existing" : "new")
       })
       .catch(() => {
-        if (!cancelled) setScrapRepos([])
+        if (!cancelled) {
+          setFluxes([])
+          setPickMode("new")
+        }
       })
     return () => {
       cancelled = true
     }
-  }, [provider])
+  }, [visible, provider])
 
   function handleClose() {
     setProvider("changelog")
     setIdentifier("")
-    setScrapRepoId(null)
-    setScrapRepos(null)
+    setSelectedFluxId(null)
+    setFluxes(null)
     setError(null)
-    setScrapMode("select")
-    setRequestUrl("")
-    setRequestSuccess(false)
+    setPickMode("existing")
+    setPending(false)
     onClose()
   }
+
+  const currentForm = tpls[provider]?.form
 
   async function handleSubmit() {
     setError(null)
 
-    if (provider === "scrap" && scrapMode === "request") {
-      if (!requestUrl.trim()) {
-        setError(t.addFlux.requiredError)
-        return
-      }
-      try {
-        new URL(requestUrl)
-      } catch {
-        setError(t.addFlux.requestUrlError)
+    if (pickMode === "existing") {
+      if (!selectedFluxId) {
+        setError(t.addFlux.selectError)
         return
       }
       setSubmitting(true)
       try {
         const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
         if (!token) throw new Error("Token manquant")
-        await createScrapRequest({ url: requestUrl }, token, apiUrl)
-        setRequestSuccess(true)
+        await subscribeFlux(provider, selectedFluxId, token, apiUrl)
+        onSuccess()
+        handleClose()
       } catch (err) {
         setError(err instanceof Error ? err.message : t.common.error)
       } finally {
@@ -127,16 +146,13 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
       return
     }
 
-    if (provider === "scrap") {
-      if (!scrapRepoId) {
-        setError(t.addFlux.selectError)
-        return
-      }
-    } else {
-      if (!identifier.trim()) {
-        setError(t.addFlux.requiredError)
-        return
-      }
+    if (!identifier.trim()) {
+      setError(t.addFlux.requiredError)
+      return
+    }
+    if (currentForm && !matchesFormPattern(currentForm, identifier)) {
+      setError(t.addFlux.requiredError)
+      return
     }
 
     setSubmitting(true)
@@ -144,19 +160,18 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
       const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
       if (!token) throw new Error("Token manquant")
 
-      if (provider === "scrap") {
-        await subscribeScrap(scrapRepoId!, token, apiUrl)
+      const url = currentForm ? buildFluxUrl(currentForm, identifier) : identifier
+      const result = await addUserRepository(userId, token, apiUrl, {
+        provider,
+        url,
+        config: { max_scraps: 5, retention_days: 15 },
+      })
+      if (result.status === "pending") {
+        setPending(true)
       } else {
-        const normalized = normalizeIdentifier(identifier, provider)
-        const url = toRepositoryUrl(normalized, provider)
-        await addUserRepository(userId, token, apiUrl, {
-          provider,
-          url,
-          config: { max_scraps: 5, retention_days: 15 },
-        })
+        onSuccess()
+        handleClose()
       }
-      onSuccess()
-      handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : t.common.error)
     } finally {
@@ -164,10 +179,20 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     }
   }
 
-  const scrapLoading = provider === "scrap" && scrapRepos === null
-  const availableScrapRepos = (scrapRepos ?? []).filter((r) => !r.is_subscribed)
+  const fluxesLoading = fluxes === null
+  const availableFluxes = (fluxes ?? []).filter((f) => !f.is_subscribed)
   const isKnownFeedProvider =
     provider === "changelog" || provider === "youtube" || provider === "rss"
+  const inputLabel =
+    currentForm?.label ??
+    (isKnownFeedProvider
+      ? t.addFlux.identifierLabels[provider as "changelog" | "youtube" | "rss"]
+      : t.addFlux.identifierLabels.generic)
+  const inputPlaceholder =
+    currentForm?.placeholder ??
+    (isKnownFeedProvider
+      ? t.addFlux.placeholders[provider as "changelog" | "youtube" | "rss"]
+      : t.addFlux.placeholders.generic)
   const inputStyle = {
     borderColor: colors.border,
     backgroundColor: colors.bg,
@@ -200,14 +225,14 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
               <X size={20} color={colors.muted} />
             </Pressable>
           </View>
-          {!requestSuccess && (
+          {!pending && (
             <Text className="mb-4 text-[13px]" style={{ color: colors.muted }}>
               {t.addFlux.description}
             </Text>
           )}
 
           <View className="gap-4">
-            {requestSuccess ? (
+            {pending ? (
               <View className="gap-2 py-2">
                 <Text className="text-sm font-semibold" style={{ color: colors.fg }}>
                   {t.addFlux.requestSent}
@@ -232,9 +257,8 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                           onPress={() => {
                             setProvider(tile.id)
                             setIdentifier("")
-                            setScrapRepoId(null)
-                            setScrapRepos(null)
-                            setScrapMode("select")
+                            setSelectedFluxId(null)
+                            setFluxes(null)
                             setError(null)
                           }}
                           className="rounded-xl px-3.5 py-2.5 border"
@@ -256,117 +280,93 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                   </View>
                 </View>
 
-                {/* Identifier / scrap selector */}
-                {provider === "scrap" ? (
-                  <View className="gap-3">
-                    {/* Mode toggle */}
-                    <View className="flex-row gap-2">
-                      <Pressable
-                        onPress={() => setScrapMode("select")}
-                        className="rounded-full px-3 py-1.5"
-                        style={{
-                          backgroundColor: scrapMode === "select" ? colors.peach : colors.bg,
-                        }}
-                      >
-                        <Text
-                          className="text-xs font-medium"
-                          style={{ color: scrapMode === "select" ? colors.peachOn : colors.fgSoft }}
-                        >
-                          {t.addFlux.chooseExisting}
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setScrapMode("request")}
-                        className="rounded-full px-3 py-1.5"
-                        style={{
-                          backgroundColor: scrapMode === "request" ? colors.peach : colors.bg,
-                        }}
-                      >
-                        <Text
-                          className="text-xs font-medium"
-                          style={{
-                            color: scrapMode === "request" ? colors.peachOn : colors.fgSoft,
-                          }}
-                        >
-                          {t.addFlux.makeRequest}
-                        </Text>
-                      </Pressable>
-                    </View>
+                {/* Mode toggle : flux existant vs nouveau */}
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => setPickMode("existing")}
+                    className="rounded-full px-3 py-1.5"
+                    style={{
+                      backgroundColor: pickMode === "existing" ? colors.peach : colors.bg,
+                    }}
+                  >
+                    <Text
+                      className="text-xs font-medium"
+                      style={{
+                        color: pickMode === "existing" ? colors.peachOn : colors.fgSoft,
+                      }}
+                    >
+                      {t.addFlux.chooseExisting}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setPickMode("new")}
+                    className="rounded-full px-3 py-1.5"
+                    style={{ backgroundColor: pickMode === "new" ? colors.peach : colors.bg }}
+                  >
+                    <Text
+                      className="text-xs font-medium"
+                      style={{ color: pickMode === "new" ? colors.peachOn : colors.fgSoft }}
+                    >
+                      {t.addFlux.makeRequest}
+                    </Text>
+                  </Pressable>
+                </View>
 
-                    {scrapMode === "select" ? (
-                      <View className="gap-1.5">
-                        <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
-                          {t.addFlux.scrapRepo}
-                        </Text>
-                        {scrapLoading ? (
-                          <ActivityIndicator size="small" color={colors.peach} />
-                        ) : availableScrapRepos.length === 0 ? (
-                          <Text className="text-sm" style={{ color: colors.dim }}>
-                            {t.addFlux.noScrapRepos}
-                          </Text>
-                        ) : (
-                          availableScrapRepos.map((r) => {
-                            const active = scrapRepoId === r.id
-                            return (
-                              <Pressable
-                                key={r.id}
-                                onPress={() => setScrapRepoId(r.id)}
-                                className="rounded-xl border p-3"
-                                style={{
-                                  borderColor: active ? colors.peach : colors.border,
-                                  backgroundColor: active ? colors.peachDim : "transparent",
-                                }}
-                              >
-                                <Text
-                                  className="text-sm font-mono"
-                                  style={{ color: colors.fgSoft }}
-                                  numberOfLines={1}
-                                >
-                                  {r.url}
-                                </Text>
-                              </Pressable>
-                            )
-                          })
-                        )}
-                      </View>
+                {pickMode === "existing" ? (
+                  <View className="gap-1.5">
+                    <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
+                      {t.addFlux.scrapRepo}
+                    </Text>
+                    {fluxesLoading ? (
+                      <ActivityIndicator size="small" color={colors.peach} />
+                    ) : availableFluxes.length === 0 ? (
+                      <Text className="text-sm" style={{ color: colors.dim }}>
+                        {t.addFlux.noScrapRepos}
+                      </Text>
                     ) : (
-                      <View className="gap-1.5">
-                        <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
-                          {t.addFlux.requestUrl}
-                        </Text>
-                        <TextInput
-                          className="rounded-xl border px-3.5 py-3"
-                          style={inputStyle}
-                          value={requestUrl}
-                          onChangeText={setRequestUrl}
-                          placeholder={t.addFlux.requestUrlPlaceholder}
-                          placeholderTextColor={colors.dim}
-                          autoCapitalize="none"
-                          keyboardType="url"
-                        />
-                      </View>
+                      availableFluxes.map((f) => {
+                        const active = selectedFluxId === f.id
+                        return (
+                          <Pressable
+                            key={f.id}
+                            onPress={() => setSelectedFluxId(f.id)}
+                            className="rounded-xl border p-3"
+                            style={{
+                              borderColor: active ? colors.peach : colors.border,
+                              backgroundColor: active ? colors.peachDim : "transparent",
+                            }}
+                          >
+                            <Text
+                              className="text-sm font-mono"
+                              style={{ color: colors.fgSoft }}
+                              numberOfLines={1}
+                            >
+                              {f.url}
+                            </Text>
+                          </Pressable>
+                        )
+                      })
                     )}
                   </View>
                 ) : (
                   <View className="gap-1.5">
                     <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
-                      {isKnownFeedProvider
-                        ? t.addFlux.identifierLabels[provider as FeedProvider]
-                        : t.addFlux.identifierLabels.generic}
+                      {inputLabel}
                     </Text>
                     <TextInput
                       className="rounded-xl border px-3.5 py-3"
                       style={inputStyle}
                       value={identifier}
                       onChangeText={setIdentifier}
-                      placeholder={
-                        isKnownFeedProvider
-                          ? t.addFlux.placeholders[provider as FeedProvider]
-                          : t.addFlux.placeholders.generic
-                      }
+                      placeholder={inputPlaceholder}
                       placeholderTextColor={colors.dim}
                       autoCapitalize="none"
                     />
+                    {approvals[provider] === "manual" && (
+                      <Text className="text-[11px]" style={{ color: colors.muted }}>
+                        {t.addFlux.requestSentDescription}
+                      </Text>
+                    )}
                   </View>
                 )}
 
@@ -404,7 +404,7 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
               </>
             )}
 
-            {requestSuccess && (
+            {pending && (
               <Pressable
                 onPress={handleClose}
                 className="items-center rounded-xl border py-3"
