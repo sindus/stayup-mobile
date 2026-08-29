@@ -10,7 +10,7 @@ import RegisterScreen from "../app/(auth)/register"
 import AppLayout from "../app/(app)/_layout"
 import ProfileScreen from "../app/(app)/profile/index"
 import FluxDetailScreen from "../app/(app)/feed/flux/[id]"
-import { loginWithPassword, registerWithPassword } from "@/lib/api"
+import { loginWithPassword, registerWithPassword, fetchAuthConfig } from "@/lib/api"
 import { renderWithProviders } from "./render"
 import { mockRedirect, redirectedTo, setMockParams } from "./setup"
 
@@ -18,7 +18,16 @@ jest.mock("@/lib/api", () => ({
   loginWithPassword: jest.fn(),
   registerWithPassword: jest.fn(),
   getUserFeed: jest.fn(),
+  fetchAuthConfig: jest.fn(),
 }))
+
+const mockedAuthConfig = fetchAuthConfig as jest.Mock
+const authConfig = (over: Record<string, unknown> = {}) => ({
+  registrationMode: "open",
+  emailPassword: true,
+  oauth: { github: true, google: true },
+  ...over,
+})
 
 const secureStore = SecureStore as unknown as {
   getItemAsync: jest.Mock
@@ -46,6 +55,7 @@ function validToken(): string {
 beforeEach(() => {
   secureStore.getItemAsync.mockResolvedValue(null)
   asyncStorage.getItem.mockResolvedValue(null)
+  mockedAuthConfig.mockResolvedValue(authConfig())
 })
 
 describe("Index", () => {
@@ -138,6 +148,32 @@ describe("LoginScreen", () => {
     await waitFor(() => expect(screen.getByText("Continuer avec GitHub")).toBeTruthy())
     expect(screen.getByText("Continuer avec Google")).toBeTruthy()
   })
+
+  it("hides an OAuth provider the instance does not offer", async () => {
+    mockedAuthConfig.mockResolvedValue(authConfig({ oauth: { github: true, google: false } }))
+    renderWithProviders(<LoginScreen />)
+
+    await waitFor(() => expect(screen.getByText("Continuer avec GitHub")).toBeTruthy())
+    expect(screen.queryByText("Continuer avec Google")).toBeNull()
+  })
+
+  it("drops the OAuth block when the instance offers neither provider", async () => {
+    mockedAuthConfig.mockResolvedValue(authConfig({ oauth: { github: false, google: false } }))
+    renderWithProviders(<LoginScreen />)
+
+    await waitFor(() => expect(screen.getByText("Content de te revoir.")).toBeTruthy())
+    expect(screen.queryByText("ou")).toBeNull()
+    expect(screen.queryByText("Continuer avec GitHub")).toBeNull()
+  })
+
+  it("reveals the server field behind the host line", async () => {
+    renderWithProviders(<LoginScreen />)
+
+    const toggle = await screen.findByText(/Serveur ·/)
+    expect(screen.queryByText("URL de l'API")).toBeNull()
+    fireEvent.press(toggle)
+    expect(screen.getByText("URL de l'API")).toBeTruthy()
+  })
 })
 
 describe("RegisterScreen", () => {
@@ -146,6 +182,19 @@ describe("RegisterScreen", () => {
 
     await waitFor(() => expect(screen.getByText("Crée ton compte.")).toBeTruthy())
     expect(screen.getByText("Déjà un compte ?")).toBeTruthy()
+  })
+
+  it("warns about admin approval when the instance requires it", async () => {
+    mockedAuthConfig.mockResolvedValue(authConfig({ registrationMode: "approval" }))
+    renderWithProviders(<RegisterScreen />)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Ton compte devra être validé par un administrateur avant que tu puisses te connecter.",
+        ),
+      ).toBeTruthy(),
+    )
   })
 
   it("registers through the form", async () => {

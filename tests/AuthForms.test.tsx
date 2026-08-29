@@ -147,4 +147,29 @@ describe("OAuthButtons", () => {
     expect(screen.queryByText("Continuer avec GitHub")).toBeNull()
     expect(screen.queryByText("Continuer avec Google")).toBeNull()
   })
+
+  it("renders only the providers it is told to", () => {
+    renderWithProviders(
+      <OAuthButtons
+        onPress={jest.fn()}
+        loading={false}
+        providers={{ github: false, google: true }}
+      />,
+    )
+
+    expect(screen.queryByText("Continuer avec GitHub")).toBeNull()
+    expect(screen.getByText("Continuer avec Google")).toBeTruthy()
+  })
+
+  it("renders nothing when no provider is offered", () => {
+    const { toJSON } = renderWithProviders(
+      <OAuthButtons
+        onPress={jest.fn()}
+        loading={false}
+        providers={{ github: false, google: false }}
+      />,
+    )
+
+    expect(toJSON()).toBeNull()
+  })
 })

@@ -2,6 +2,7 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from "react-na
 import { Link } from "expo-router"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useAuth } from "@/hooks/useAuth"
+import { useAuthConfig } from "@/hooks/useAuthConfig"
 import { RegisterForm } from "@/components/auth/RegisterForm"
 import { AuroraMark } from "@/components/ui/AuroraMark"
 import { useLanguage } from "@/context/LanguageContext"
@@ -9,6 +10,7 @@ import { colors } from "@/theme"
 
 export default function RegisterScreen() {
   const { register, loading, error } = useAuth()
+  const { config } = useAuthConfig()
   const { t } = useLanguage()
 
   return (
@@ -34,6 +36,12 @@ export default function RegisterScreen() {
           </View>
 
           <RegisterForm onSubmit={register} loading={loading} error={error} />
+
+          {config?.registrationMode === "approval" && (
+            <Text className="mt-3 text-center text-[12px]" style={{ color: colors.muted }}>
+              {t.auth.pendingApprovalHint}
+            </Text>
+          )}
 
           <View className="mt-6 flex-row justify-center gap-1">
             <Text className="text-[13px]" style={{ color: colors.muted }}>

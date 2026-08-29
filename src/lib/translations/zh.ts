@@ -22,6 +22,8 @@ export const zh: Translations = {
     continueWithGitHub: "使用GitHub继续",
     continueWithGoogle: "使用Google继续",
     or: "或",
+    server: "服务器",
+    pendingApprovalHint: "登录前，你的账户需要管理员批准。",
   },
   tabs: {
     feed: "订阅",

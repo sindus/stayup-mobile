@@ -8,6 +8,7 @@ import {
   getProviderFluxes,
   subscribeFlux,
   unsubscribeFlux,
+  fetchAuthConfig,
 } from "../src/lib/api"
 
 const API_URL = "https://stayup-api.r-sik.workers.dev"
@@ -27,6 +28,29 @@ function mockFetchError() {
 }
 
 afterEach(() => jest.clearAllMocks())
+
+describe("fetchAuthConfig", () => {
+  it("returns the parsed config on success", async () => {
+    const cfg = {
+      registrationMode: "approval",
+      emailPassword: true,
+      oauth: { github: true, google: false },
+    }
+    mockFetch(200, cfg)
+    await expect(fetchAuthConfig(API_URL)).resolves.toEqual(cfg)
+    expect(global.fetch).toHaveBeenCalledWith(`${API_URL}/auth/config`)
+  })
+
+  it("returns null when the endpoint is missing (non-2xx)", async () => {
+    mockFetch(404, {})
+    await expect(fetchAuthConfig(API_URL)).resolves.toBeNull()
+  })
+
+  it("returns null when the request throws (unreachable API)", async () => {
+    mockFetchError()
+    await expect(fetchAuthConfig(API_URL)).resolves.toBeNull()
+  })
+})
 
 describe("loginWithPassword", () => {
   it("returns token on success", async () => {

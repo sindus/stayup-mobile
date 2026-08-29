@@ -22,6 +22,9 @@ export const es: Translations = {
     continueWithGitHub: "Continuar con GitHub",
     continueWithGoogle: "Continuar con Google",
     or: "o",
+    server: "Servidor",
+    pendingApprovalHint:
+      "Un administrador deberá aprobar tu cuenta antes de que puedas iniciar sesión.",
   },
   tabs: {
     feed: "Feed",

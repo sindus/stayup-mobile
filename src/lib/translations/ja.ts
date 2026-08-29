@@ -22,6 +22,8 @@ export const ja: Translations = {
     continueWithGitHub: "GitHubで続ける",
     continueWithGoogle: "Googleで続ける",
     or: "または",
+    server: "サーバー",
+    pendingApprovalHint: "サインインする前に、管理者による承認が必要です。",
   },
   tabs: {
     feed: "フィード",
