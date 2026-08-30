@@ -134,7 +134,34 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     fireEvent.press(screen.getByText("https://a.example.com"))
     fireEvent.press(screen.getByText("Ajouter"))
 
-    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 1, "tok", API_URL))
+    await waitFor(() =>
+      expect(mockedSubscribe).toHaveBeenCalledWith("rss", 1, "tok", API_URL, undefined),
+    )
+    expect(onSuccess).toHaveBeenCalled()
+  })
+
+  it("subscribes to a flux living in a secondary database", async () => {
+    mockedGetFluxes.mockResolvedValue([
+      {
+        id: 3,
+        url: "https://ext.example.com",
+        config: {},
+        created_at: "",
+        is_subscribed: false,
+        dataSourceId: 7,
+        dataSourceName: "Team feeds",
+      },
+    ])
+    const { onSuccess } = await setup()
+    fireEvent.press(screen.getByText("RSS"))
+
+    await waitFor(() => expect(screen.getByText("https://ext.example.com")).toBeTruthy())
+    expect(screen.getByText("Team feeds")).toBeTruthy()
+
+    fireEvent.press(screen.getByText("https://ext.example.com"))
+    fireEvent.press(screen.getByText("Ajouter"))
+
+    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 3, "tok", API_URL, 7))
     expect(onSuccess).toHaveBeenCalled()
   })
 

@@ -203,6 +203,16 @@ describe("provider flux endpoints", () => {
     const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
     expect(url).toBe(`${API_URL}/providers/rss/fluxes/3/subscribe`)
     expect(init.method).toBe("POST")
+    expect(init.body).toBeUndefined()
+  })
+
+  it("passes the data source id in the body when subscribing to a secondary flux", async () => {
+    mockFetch(200, { success: true })
+    await subscribeFlux("rss", 3, "tok", API_URL, 7)
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0]
+    expect(init.method).toBe("POST")
+    expect(JSON.parse(init.body)).toEqual({ dataSourceId: 7 })
   })
 
   it("unsubscribes with DELETE", async () => {
@@ -212,6 +222,16 @@ describe("provider flux endpoints", () => {
     const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
     expect(url).toBe(`${API_URL}/providers/rss/fluxes/3/subscribe`)
     expect(init.method).toBe("DELETE")
+    expect(init.body).toBeUndefined()
+  })
+
+  it("passes the data source id in the body when unsubscribing from a secondary flux", async () => {
+    mockFetch(200, { success: true })
+    await unsubscribeFlux("rss", 3, "tok", API_URL, 7)
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0]
+    expect(init.method).toBe("DELETE")
+    expect(JSON.parse(init.body)).toEqual({ dataSourceId: 7 })
   })
 })
 

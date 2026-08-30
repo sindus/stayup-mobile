@@ -37,7 +37,8 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
   const [provider, setProvider] = useState<string>("changelog")
   const [identifier, setIdentifier] = useState("")
   const [pickMode, setPickMode] = useState<"existing" | "new">("existing")
-  const [selectedFluxId, setSelectedFluxId] = useState<number | null>(null)
+  // Flux entier (pas juste l'id) : un même id peut exister dans plusieurs bases.
+  const [selectedFlux, setSelectedFlux] = useState<ProviderFlux | null>(null)
   const [fluxes, setFluxes] = useState<ProviderFlux[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,7 +114,7 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
   function handleClose() {
     setProvider("changelog")
     setIdentifier("")
-    setSelectedFluxId(null)
+    setSelectedFlux(null)
     setFluxes(null)
     setError(null)
     setPickMode("existing")
@@ -127,7 +128,7 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     setError(null)
 
     if (pickMode === "existing") {
-      if (!selectedFluxId) {
+      if (!selectedFlux) {
         setError(t.addFlux.selectError)
         return
       }
@@ -135,7 +136,13 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
       try {
         const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
         if (!token) throw new Error("Token manquant")
-        await subscribeFlux(provider, selectedFluxId, token, apiUrl)
+        await subscribeFlux(
+          provider,
+          selectedFlux.id,
+          token,
+          apiUrl,
+          selectedFlux.dataSourceId ?? undefined,
+        )
         onSuccess()
         handleClose()
       } catch (err) {
@@ -257,7 +264,7 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                           onPress={() => {
                             setProvider(tile.id)
                             setIdentifier("")
-                            setSelectedFluxId(null)
+                            setSelectedFlux(null)
                             setFluxes(null)
                             setError(null)
                           }}
@@ -325,11 +332,12 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                       </Text>
                     ) : (
                       availableFluxes.map((f) => {
-                        const active = selectedFluxId === f.id
+                        const active =
+                          selectedFlux?.id === f.id && selectedFlux?.dataSourceId === f.dataSourceId
                         return (
                           <Pressable
-                            key={f.id}
-                            onPress={() => setSelectedFluxId(f.id)}
+                            key={`${f.dataSourceId ?? "local"}:${f.id}`}
+                            onPress={() => setSelectedFlux(f)}
                             className="rounded-xl border p-3"
                             style={{
                               borderColor: active ? colors.peach : colors.border,
@@ -343,6 +351,15 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
                             >
                               {f.url}
                             </Text>
+                            {f.dataSourceName ? (
+                              <Text
+                                className="mt-1 text-[11px]"
+                                style={{ color: colors.dim }}
+                                numberOfLines={1}
+                              >
+                                {f.dataSourceName}
+                              </Text>
+                            ) : null}
                           </Pressable>
                         )
                       })
