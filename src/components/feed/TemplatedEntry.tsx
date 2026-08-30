@@ -19,7 +19,10 @@ export function TemplatedEntry({ template, item, source, color, onPress }: Templ
   const view = resolveItemView(template, item, source)
   const layout = template.list?.layout ?? "row"
   const date = view.timestamp ? formatDate(view.timestamp) : ""
-  const srcName = typeof item._data_source_name === "string" ? item._data_source_name : ""
+  const srcName =
+    (typeof item._instance_name === "string" && item._instance_name) ||
+    (typeof item._data_source_name === "string" && item._data_source_name) ||
+    ""
   const srcBadge = srcName ? (
     <Text
       className="rounded px-1.5 py-0.5 text-[11px] font-mono"

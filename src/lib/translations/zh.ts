@@ -1,6 +1,24 @@
 import type { Translations } from "./en"
 
 export const zh: Translations = {
+  instances: {
+    title: "服务器",
+    subtitle: "一次性关注多个 API 实例的订阅源。",
+    primary: "主",
+    add: "添加服务器",
+    urlLabel: "服务器 URL",
+    urlPlaceholder: "https://your-api.example.com",
+    cancel: "取消",
+    next: "下一步",
+    makePrimary: "设为主服务器",
+    reconnect: "重新连接",
+    remove: "移除",
+    save: "保存",
+    expired: "会话已过期",
+    removePrimaryWarning: "移除主服务器会让你退出所有登录。",
+    unreachable: "无法访问",
+    manage: "服务器",
+  },
   auth: {
     subtitle: "从你上次离开的地方继续。",
     loginTitle: "欢迎回来。",

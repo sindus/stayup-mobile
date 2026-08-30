@@ -65,8 +65,14 @@ function feedResponse(rss = [rssItem(1, "Article A"), rssItem(2, "Article B")]) 
  * AsyncStorage est partagé par la langue, le thème et les items lus : on répond
  * par clé pour ne pas injecter une liste d'ids là où une langue est attendue.
  */
+const INSTANCE_ID = "i1"
+const INSTANCE_META = JSON.stringify([
+  { id: INSTANCE_ID, url: "https://stayup-api.r-sik.workers.dev", name: "api" },
+])
+
 function stubStorage(values: Record<string, string> = {}) {
-  asyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(values[key] ?? null))
+  const all: Record<string, string> = { instances: INSTANCE_META, ...values }
+  asyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(all[key] ?? null))
 }
 
 /** Marque des items comme déjà lus au démarrage. */
@@ -75,7 +81,9 @@ function withReadItems(...ids: string[]) {
 }
 
 beforeEach(() => {
-  secureStore.getItemAsync.mockResolvedValue(validToken())
+  secureStore.getItemAsync.mockImplementation((k: string) =>
+    Promise.resolve(k === `tok_${INSTANCE_ID}` ? validToken() : null),
+  )
   stubStorage()
   mockedGetUserFeed.mockResolvedValue(feedResponse())
   mockedGetProviders.mockResolvedValue(RAW_PROVIDERS)
@@ -95,7 +103,7 @@ describe("FeedScreen — chargement", () => {
     mockedGetUserFeed.mockRejectedValue(new Error("StayUp API error 500"))
     renderWithProviders(<FeedScreen />)
 
-    await waitFor(() => expect(screen.getByText("StayUp API error 500")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("Erreur de chargement.")).toBeTruthy())
 
     mockedGetUserFeed.mockResolvedValue(feedResponse())
     fireEvent.press(screen.getByText("Réessayer"))
@@ -132,7 +140,7 @@ describe("FeedScreen — affichage", () => {
 
 describe("FeedScreen — filtres", () => {
   it("keeps only unread items in unread mode", async () => {
-    withReadItems("rss:1")
+    withReadItems("i1:rss:1")
     renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
@@ -143,9 +151,9 @@ describe("FeedScreen — filtres", () => {
   })
 
   it("keeps the currently open item visible in unread mode", async () => {
-    withReadItems("rss:1")
+    withReadItems("i1:rss:1")
     useSelectedFeedItemStore.setState({
-      item: { provider: "rss", item: rssItem(1, "Article A") },
+      item: { provider: "rss", item: { ...rssItem(1, "Article A"), _instance_id: "i1" } },
       repoUrl: "",
     })
     renderWithProviders(<FeedScreen />)
@@ -158,7 +166,7 @@ describe("FeedScreen — filtres", () => {
   })
 
   it("switches back to the all filter", async () => {
-    withReadItems("rss:1")
+    withReadItems("i1:rss:1")
     renderWithProviders(<FeedScreen />)
     await waitFor(() => expect(screen.getByText("Article A")).toBeTruthy())
 
@@ -189,7 +197,7 @@ describe("FeedScreen — lecture", () => {
     await waitFor(() =>
       expect(asyncStorage.setItem).toHaveBeenCalledWith(
         "read_items",
-        JSON.stringify(["rss:1", "rss:2"]),
+        JSON.stringify(["i1:rss:1", "i1:rss:2"]),
       ),
     )
   })
@@ -205,12 +213,32 @@ describe("FeedScreen — lecture", () => {
   })
 
   it("drops stored ids that are no longer in the feed", async () => {
-    withReadItems("rss:1", "rss:999")
+    withReadItems("i1:rss:1", "i1:rss:999")
     renderWithProviders(<FeedScreen />)
 
     await waitFor(() =>
-      expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["rss:1"])),
+      expect(asyncStorage.setItem).toHaveBeenCalledWith("read_items", JSON.stringify(["i1:rss:1"])),
     )
+  })
+})
+
+describe("FeedScreen — multi-instance", () => {
+  it("shows a soft strip for an unreachable instance without dropping the feed", async () => {
+    stubStorage({
+      instances: JSON.stringify([
+        { id: "i1", url: "https://a.dev", name: "A" },
+        { id: "i2", url: "https://b.dev", name: "Beta" },
+      ]),
+    })
+    secureStore.getItemAsync.mockImplementation((k: string) =>
+      Promise.resolve(k === "tok_i1" || k === "tok_i2" ? validToken() : null),
+    )
+    mockedGetUserFeed.mockResolvedValueOnce(feedResponse()).mockRejectedValueOnce(new Error("down"))
+
+    renderWithProviders(<FeedScreen />)
+
+    await waitFor(() => expect(screen.getByText(/Injoignable/)).toBeTruthy())
+    expect(screen.getByText("Article A")).toBeTruthy()
   })
 })
 

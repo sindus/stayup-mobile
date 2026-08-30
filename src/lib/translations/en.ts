@@ -1,4 +1,22 @@
 export const en = {
+  instances: {
+    title: "Servers",
+    subtitle: "Follow feeds from several API instances at once.",
+    primary: "Primary",
+    add: "Add a server",
+    urlLabel: "Server URL",
+    urlPlaceholder: "https://your-api.example.com",
+    cancel: "Cancel",
+    next: "Next",
+    makePrimary: "Make primary",
+    reconnect: "Reconnect",
+    remove: "Remove",
+    save: "Save",
+    expired: "Session expired",
+    removePrimaryWarning: "Removing your primary server signs you out of everything.",
+    unreachable: "Unreachable",
+    manage: "Servers",
+  },
   auth: {
     subtitle: "Pick up right where you left off.",
     loginTitle: "Good to see you again.",

@@ -7,7 +7,8 @@ import {
   getProviderFluxes,
   subscribeFlux,
 } from "@/lib/api"
-import { readApiUrl, readToken } from "@/lib/store"
+import type { Instance } from "@/lib/store"
+import { decodeToken } from "@/lib/session"
 import { useLanguage } from "@/context/LanguageContext"
 import { colors, getProviderMeta } from "@/theme"
 import {
@@ -28,12 +29,14 @@ interface ProviderTile {
 interface AddFluxSheetProps {
   visible: boolean
   onClose: () => void
-  userId: string
+  instances: Instance[]
   onSuccess: () => void
 }
 
-export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxSheetProps) {
+export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFluxSheetProps) {
   const { t } = useLanguage()
+  const [instanceId, setInstanceId] = useState(instances[0]?.id ?? "")
+  const active = instances.find((i) => i.id === instanceId) ?? instances[0]
   const [provider, setProvider] = useState<string>("changelog")
   const [identifier, setIdentifier] = useState("")
   const [pickMode, setPickMode] = useState<"existing" | "new">("existing")
@@ -49,10 +52,9 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
   // Liste des providers : vient de l'API, aucun nom codé en dur ici.
   useEffect(() => {
-    if (!visible) return
+    if (!visible || !active) return
     let cancelled = false
-    Promise.all([readToken(), readApiUrl()])
-      .then(([token, apiUrl]) => getConnectorProviders(token ?? "", apiUrl))
+    getConnectorProviders(active.token, active.url)
       .then((providers) => {
         if (cancelled) return
         const parsed = providers.map((p) => ({ ...p, tpl: normalizeTemplate(p.template) }))
@@ -84,17 +86,13 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     return () => {
       cancelled = true
     }
-  }, [visible, t])
+  }, [visible, t, active])
 
-  // Flux existants du provider sélectionné.
+  // Flux existants du provider sélectionné, sur l'instance choisie.
   useEffect(() => {
-    if (!visible) return
+    if (!visible || !active) return
     let cancelled = false
-    Promise.all([readToken(), readApiUrl()])
-      .then(([token, apiUrl]) => {
-        if (cancelled || !token) return []
-        return getProviderFluxes(provider, token, apiUrl)
-      })
+    getProviderFluxes(provider, active.token, active.url)
       .then((list) => {
         if (cancelled) return
         setFluxes(list ?? [])
@@ -109,9 +107,10 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
     return () => {
       cancelled = true
     }
-  }, [visible, provider])
+  }, [visible, provider, active])
 
   function handleClose() {
+    setInstanceId(instances[0]?.id ?? "")
     setProvider("changelog")
     setIdentifier("")
     setSelectedFlux(null)
@@ -134,13 +133,12 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
       }
       setSubmitting(true)
       try {
-        const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
-        if (!token) throw new Error("Token manquant")
+        if (!active) throw new Error("Token manquant")
         await subscribeFlux(
           provider,
           selectedFlux.id,
-          token,
-          apiUrl,
+          active.token,
+          active.url,
           selectedFlux.dataSourceId ?? undefined,
         )
         onSuccess()
@@ -164,11 +162,11 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
 
     setSubmitting(true)
     try {
-      const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
-      if (!token) throw new Error("Token manquant")
+      if (!active) throw new Error("Token manquant")
+      const targetUserId = decodeToken(active.token).userId
 
       const url = currentForm ? buildFluxUrl(currentForm, identifier) : identifier
-      const result = await addUserRepository(userId, token, apiUrl, {
+      const result = await addUserRepository(targetUserId, active.token, active.url, {
         provider,
         url,
         config: { max_scraps: 5, retention_days: 15 },
@@ -250,6 +248,41 @@ export function AddFluxSheet({ visible, onClose, userId, onSuccess }: AddFluxShe
               </View>
             ) : (
               <>
+                {instances.length > 1 && (
+                  <View className="gap-1.5">
+                    <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>
+                      {t.instances.title}
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {instances.map((inst) => {
+                        const on = inst.id === instanceId
+                        return (
+                          <Pressable
+                            key={inst.id}
+                            onPress={() => {
+                              setInstanceId(inst.id)
+                              setSelectedFlux(null)
+                              setFluxes(null)
+                              setError(null)
+                            }}
+                            className="rounded-xl border px-3 py-2"
+                            style={{
+                              backgroundColor: on ? colors.peachDim : colors.bg,
+                              borderColor: on ? colors.peach : colors.border,
+                            }}
+                          >
+                            <Text
+                              className="text-[13px] font-medium"
+                              style={{ color: on ? colors.peach : colors.fgSoft }}
+                            >
+                              {inst.name}
+                            </Text>
+                          </Pressable>
+                        )
+                      })}
+                    </View>
+                  </View>
+                )}
                 {/* Provider selector — 2x2 grid */}
                 <View className="gap-1.5">
                   <Text className="text-[11px] font-medium" style={{ color: colors.fgSoft }}>

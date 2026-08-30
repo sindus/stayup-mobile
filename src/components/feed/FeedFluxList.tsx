@@ -5,7 +5,8 @@ import { ImportExportButtons } from "./ImportExportButtons"
 import type { FeedFlux } from "@/hooks/useFeed"
 import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
-import { readToken, readApiUrl } from "@/lib/store"
+import { decodeToken } from "@/lib/session"
+import type { Instance } from "@/lib/store"
 import { stripUrlScheme } from "@/lib/utils"
 import { colors, getProviderMeta } from "@/theme"
 import { providerIcon } from "./providerIcons"
@@ -15,19 +16,19 @@ import type { Provider } from "@/types"
 interface FeedFluxListProps {
   fluxes: FeedFlux[]
   templates: Record<string, ProviderMeta>
-  userId: string
+  instances: Instance[]
   selectedProvider: Provider | null
   onSelectProvider: (p: Provider | null) => void
   onAddPress: () => void
   onDeleted: () => void
   onImported: () => void
-  unreadCountByRepoId?: Record<number, number>
+  unreadCountByRepoId?: Record<string, number>
 }
 
 export function FeedFluxList({
   fluxes,
   templates,
-  userId,
+  instances,
   selectedProvider,
   onSelectProvider,
   onAddPress,
@@ -37,6 +38,10 @@ export function FeedFluxList({
 }: FeedFluxListProps) {
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(true)
+
+  const primaryUserId = instances[0] ? decodeToken(instances[0].token).userId : ""
+  const multiInstance = new Set(fluxes.map((f) => f.instanceId)).size > 1
+  const unreadKey = (f: FeedFlux) => `${f.instanceId ?? ""}:${f.repository_id}`
 
   // Dynamique : les providers affichés sont ceux réellement présents dans les flux de
   // l'utilisateur, pas une liste fermée codée en dur.
@@ -54,9 +59,14 @@ export function FeedFluxList({
         style: "destructive",
         onPress: async () => {
           try {
-            const [token, apiUrl] = await Promise.all([readToken(), readApiUrl()])
-            if (!token) return
-            await deleteUserRepository(userId, flux.id, token, apiUrl)
+            const inst = instances.find((i) => i.id === flux.instanceId)
+            if (!inst) return
+            await deleteUserRepository(
+              decodeToken(inst.token).userId,
+              flux.id,
+              inst.token,
+              inst.url,
+            )
             onDeleted()
           } catch {
             /* ignore */
@@ -102,7 +112,7 @@ export function FeedFluxList({
           >
             <Plus size={16} color={colors.peach} />
           </Pressable>
-          <ImportExportButtons fluxes={fluxes} userId={userId} onImported={onImported} />
+          <ImportExportButtons fluxes={fluxes} userId={primaryUserId} onImported={onImported} />
           {expanded ? (
             <ChevronUp size={16} color={colors.muted} />
           ) : (
@@ -137,7 +147,7 @@ export function FeedFluxList({
               const providerFluxes = fluxes.filter((f) => f.provider === p)
               if (providerFluxes.length === 0) return null
               const providerUnread = providerFluxes.reduce(
-                (sum, f) => sum + (unreadCountByRepoId[f.repository_id] ?? 0),
+                (sum, f) => sum + (unreadCountByRepoId[unreadKey(f)] ?? 0),
                 0,
               )
               const active = selectedProvider === p
@@ -183,7 +193,7 @@ export function FeedFluxList({
               {fluxes
                 .filter((f) => f.provider === selectedProvider)
                 .map((flux) => {
-                  const fluxUnread = unreadCountByRepoId[flux.repository_id] ?? 0
+                  const fluxUnread = unreadCountByRepoId[unreadKey(flux)] ?? 0
                   return (
                     <View
                       key={flux.id}
@@ -197,6 +207,15 @@ export function FeedFluxList({
                       >
                         {stripUrlScheme(flux.identifier)}
                       </Text>
+                      {multiInstance && (
+                        <Text
+                          className="text-[10px]"
+                          style={{ color: colors.dim }}
+                          numberOfLines={1}
+                        >
+                          {flux.instanceName}
+                        </Text>
+                      )}
                       {fluxUnread > 0 && (
                         <View
                           className="rounded-full px-1 py-0.5"

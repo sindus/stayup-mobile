@@ -1,6 +1,24 @@
 import type { Translations } from "./en"
 
 export const de: Translations = {
+  instances: {
+    title: "Server",
+    subtitle: "Folge Feeds von mehreren API-Instanzen gleichzeitig.",
+    primary: "Primär",
+    add: "Server hinzufügen",
+    urlLabel: "Server-URL",
+    urlPlaceholder: "https://deine-api.example.com",
+    cancel: "Abbrechen",
+    next: "Weiter",
+    makePrimary: "Als primär festlegen",
+    reconnect: "Neu verbinden",
+    remove: "Entfernen",
+    save: "Speichern",
+    expired: "Sitzung abgelaufen",
+    removePrimaryWarning: "Den primären Server zu entfernen meldet dich überall ab.",
+    unreachable: "Nicht erreichbar",
+    manage: "Server",
+  },
   auth: {
     subtitle: "Mach da weiter, wo du aufgehört hast.",
     loginTitle: "Schön, dich wiederzusehen.",

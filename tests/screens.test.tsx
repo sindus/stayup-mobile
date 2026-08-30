@@ -244,47 +244,50 @@ describe("ProfileScreen", () => {
     expect(screen.getByText("🇫🇷 Français")).toBeTruthy()
   })
 
-  it("exposes the API URL section prefilled with the default url", async () => {
+  it("opens the servers sheet from the profile", async () => {
+    secureStore.getItemAsync.mockResolvedValue(validToken())
     renderWithProviders(<ProfileScreen />)
 
+    const row = await screen.findByText("Serveurs")
+    fireEvent.press(row)
+
+    // The sheet's subtitle appears once it is open.
     await waitFor(() =>
-      expect(screen.getByDisplayValue("https://stayup-api.r-sik.workers.dev")).toBeTruthy(),
+      expect(
+        screen.getByText("Suis les flux de plusieurs instances d'API à la fois."),
+      ).toBeTruthy(),
     )
   })
 
-  it("saves a trimmed API URL", async () => {
+  it("closes the servers sheet again", async () => {
+    secureStore.getItemAsync.mockResolvedValue(validToken())
     renderWithProviders(<ProfileScreen />)
-    const input = await screen.findByDisplayValue("https://stayup-api.r-sik.workers.dev")
 
-    fireEvent.changeText(input, "  https://my-api.example.com/  ")
-    fireEvent.press(screen.getByText("Enregistrer"))
+    fireEvent.press(await screen.findByText("Serveurs"))
+    const subtitle = "Suis les flux de plusieurs instances d'API à la fois."
+    await waitFor(() => expect(screen.getByText(subtitle)).toBeTruthy())
 
-    await waitFor(() =>
-      expect(asyncStorage.setItem).toHaveBeenCalledWith("api_url", "https://my-api.example.com"),
+    fireEvent.press(screen.getByTestId("icon-X"))
+    await waitFor(() => expect(screen.queryByText(subtitle)).toBeNull())
+  })
+
+  it("badges the servers row with the count when more than one is connected", async () => {
+    asyncStorage.getItem.mockImplementation((k: string) =>
+      Promise.resolve(
+        k === "instances"
+          ? JSON.stringify([
+              { id: "i1", url: "https://a.dev", name: "A" },
+              { id: "i2", url: "https://b.dev", name: "B" },
+            ])
+          : null,
+      ),
     )
-    expect(screen.getByText("URL de l'API mise à jour.")).toBeTruthy()
-  })
-
-  it("rejects a malformed API URL without storing it", async () => {
+    secureStore.getItemAsync.mockResolvedValue(validToken())
     renderWithProviders(<ProfileScreen />)
-    const input = await screen.findByDisplayValue("https://stayup-api.r-sik.workers.dev")
 
-    fireEvent.changeText(input, "pas-une-url")
-    fireEvent.press(screen.getByText("Enregistrer"))
-
-    await waitFor(() => expect(screen.getByText("Saisis une URL valide.")).toBeTruthy())
-    expect(asyncStorage.setItem).not.toHaveBeenCalledWith("api_url", expect.anything())
-  })
-
-  it("resets the API URL back to the default", async () => {
-    asyncStorage.getItem.mockResolvedValueOnce("https://my-api.example.com")
-    renderWithProviders(<ProfileScreen />)
-    await screen.findByDisplayValue("https://my-api.example.com")
-
-    fireEvent.press(screen.getByText("Réinitialiser par défaut"))
-
-    await waitFor(() => expect(asyncStorage.removeItem).toHaveBeenCalledWith("api_url"))
-    expect(screen.getByDisplayValue("https://stayup-api.r-sik.workers.dev")).toBeTruthy()
+    const row = await screen.findByText("Serveurs")
+    expect(row.parent?.parent).toBeTruthy()
+    await waitFor(() => expect(screen.getByText("2")).toBeTruthy())
   })
 
   it("signs the user out", async () => {

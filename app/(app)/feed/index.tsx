@@ -17,12 +17,16 @@ import type { Provider, TaggedItem } from "@/types"
 
 type FilterMode = "all" | "unread"
 
+const srcKey = (instanceId: unknown, repositoryId: unknown) =>
+  `${typeof instanceId === "string" ? instanceId : ""}:${repositoryId}`
+
 export default function FeedScreen() {
   const router = useRouter()
-  const { session } = useAuth()
+  const auth = useAuth()
   const { t } = useLanguage()
-  const userId = session?.userId ?? ""
-  const { fluxes, connectors, templates, loading, error, refresh } = useFeed(userId)
+  const { fluxes, connectors, templates, instanceErrors, loading, error, refresh } = useFeed(
+    auth.instances,
+  )
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
   const [filterState, setFilterState] = useState<{ providerId: Provider | null; mode: FilterMode }>(
     {
@@ -37,8 +41,10 @@ export default function FeedScreen() {
   const openItemId = openItem ? getTaggedItemId(openItem) : null
 
   useEffect(() => {
-    void init()
-  }, [init])
+    // Attendre que les instances soient chargées : `init` migre les clés d'items
+    // lus vers l'instance primaire, il lui faut donc son id.
+    if (auth.instances.length > 0) void init(auth.instances[0].id)
+  }, [init, auth.instances])
 
   useEffect(() => {
     if (!connectors || !initialized) return
@@ -61,12 +67,12 @@ export default function FeedScreen() {
     [connectors],
   )
 
-  const unreadCountByRepoId = useMemo<Record<number, number>>(() => {
-    const counts: Record<number, number> = {}
+  const unreadCountByRepoId = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {}
     for (const tagged of allTaggedItems) {
       if (!readIds.has(getTaggedItemId(tagged))) {
-        const rid = tagged.item.repository_id
-        counts[rid] = (counts[rid] ?? 0) + 1
+        const k = srcKey(tagged.item._instance_id, tagged.item.repository_id)
+        counts[k] = (counts[k] ?? 0) + 1
       }
     }
     return counts
@@ -78,7 +84,10 @@ export default function FeedScreen() {
   )
 
   function handlePressItem(tagged: TaggedItem) {
-    const flux = (fluxes ?? []).find((r) => r.repository_id === tagged.item.repository_id)
+    const flux = (fluxes ?? []).find(
+      (r) =>
+        r.repository_id === tagged.item.repository_id && r.instanceId === tagged.item._instance_id,
+    )
     setItem(tagged, {
       repoUrl: flux?.url ?? "",
       template: templates[tagged.provider]?.template ?? null,
@@ -121,7 +130,7 @@ export default function FeedScreen() {
       <FeedFluxList
         fluxes={fluxes}
         templates={templates}
-        userId={userId}
+        instances={auth.instances}
         selectedProvider={selectedProvider}
         onSelectProvider={setSelectedProvider}
         onAddPress={() => setAddVisible(true)}
@@ -129,6 +138,14 @@ export default function FeedScreen() {
         onImported={refresh}
         unreadCountByRepoId={unreadCountByRepoId}
       />
+
+      {instanceErrors.length > 0 && (
+        <View className="px-4 py-1.5" style={{ backgroundColor: colors.roseDim }}>
+          <Text className="text-xs" style={{ color: colors.rose }}>
+            {t.instances.unreachable} : {instanceErrors.map((e) => e.instanceName).join(", ")}
+          </Text>
+        </View>
+      )}
 
       {/* Filter bar */}
       <View
@@ -200,7 +217,7 @@ export default function FeedScreen() {
       <AddFluxSheet
         visible={addVisible}
         onClose={() => setAddVisible(false)}
-        userId={userId}
+        instances={auth.instances}
         onSuccess={refresh}
       />
     </SafeAreaView>

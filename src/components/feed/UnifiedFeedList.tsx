@@ -6,6 +6,11 @@ import { useLanguage } from "@/context/LanguageContext"
 import { colors, getProviderMeta } from "@/theme"
 import { TemplatedEntry } from "./TemplatedEntry"
 import { providerIcon } from "./providerIcons"
+import { getTaggedItemId } from "@/store/readItems"
+
+/** Clé de source : `<instanceId>:<repository_id>`. */
+const srcKey = (instanceId: unknown, repositoryId: unknown) =>
+  `${typeof instanceId === "string" ? instanceId : ""}:${repositoryId}`
 
 function getItemDate(tagged: TaggedItem): string {
   const item = tagged.item
@@ -38,7 +43,7 @@ export function UnifiedFeedList({
 
   const sourceMap = Object.fromEntries(
     repositories.map((r) => [
-      r.repository_id,
+      srcKey(r.instanceId, r.repository_id),
       { url: r.url, config: r.config ?? {}, type: r.provider ?? "" },
     ]),
   )
@@ -64,7 +69,7 @@ export function UnifiedFeedList({
       renderItem={({ item: tagged }) => {
         const meta = templates[tagged.provider]
         const { color } = getProviderMeta(tagged.provider, meta?.template)
-        const id = `${tagged.provider}:${tagged.item.id}`
+        const id = getTaggedItemId(tagged)
         const isRead = readIds?.has(id) ?? false
         const isOpen = id === openItemId
         const onPress = onPressItem ? () => onPressItem(tagged) : undefined
@@ -80,7 +85,7 @@ export function UnifiedFeedList({
                 <TemplatedEntry
                   template={meta.template}
                   item={tagged.item as Record<string, unknown>}
-                  source={sourceMap[tagged.item.repository_id as number]}
+                  source={sourceMap[srcKey(tagged.item._instance_id, tagged.item.repository_id)]}
                   color={color}
                   onPress={onPress}
                 />

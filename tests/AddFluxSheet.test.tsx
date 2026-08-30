@@ -25,6 +25,10 @@ const mockedSubscribe = subscribeFlux as jest.Mock
 const mockedGetConnectorProviders = getConnectorProviders as jest.Mock
 
 const API_URL = "https://stayup-api.r-sik.workers.dev"
+const TOKEN = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: "user-1" }))
+  .toString("base64")
+  .replace(/=/g, "")}.sig`
+const INSTANCES = [{ id: "i1", url: API_URL, name: "Primary", token: TOKEN }]
 
 // `scrap` est le provider en mode `manual` dans ce jeu de fixtures.
 function providers() {
@@ -38,7 +42,13 @@ async function setup(props: Partial<React.ComponentProps<typeof AddFluxSheet>> =
   const onClose = jest.fn()
   const onSuccess = jest.fn()
   renderWithProviders(
-    <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} {...props} />,
+    <AddFluxSheet
+      visible
+      onClose={onClose}
+      instances={INSTANCES}
+      onSuccess={onSuccess}
+      {...props}
+    />,
   )
   await waitFor(() => expect(screen.getByText("Changelog")).toBeTruthy())
   return { onClose, onSuccess }
@@ -73,7 +83,7 @@ describe("AddFluxSheet — add a new flux", () => {
     fireEvent.press(screen.getByText("Ajouter"))
 
     await waitFor(() =>
-      expect(mockedAdd).toHaveBeenCalledWith("user-1", "tok", API_URL, {
+      expect(mockedAdd).toHaveBeenCalledWith("user-1", TOKEN, API_URL, {
         provider: "changelog",
         url: "https://github.com/facebook/react/",
         config: { max_scraps: 5, retention_days: 15 },
@@ -135,7 +145,7 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     fireEvent.press(screen.getByText("Ajouter"))
 
     await waitFor(() =>
-      expect(mockedSubscribe).toHaveBeenCalledWith("rss", 1, "tok", API_URL, undefined),
+      expect(mockedSubscribe).toHaveBeenCalledWith("rss", 1, TOKEN, API_URL, undefined),
     )
     expect(onSuccess).toHaveBeenCalled()
   })
@@ -161,7 +171,7 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     fireEvent.press(screen.getByText("https://ext.example.com"))
     fireEvent.press(screen.getByText("Ajouter"))
 
-    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 3, "tok", API_URL, 7))
+    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 3, TOKEN, API_URL, 7))
     expect(onSuccess).toHaveBeenCalled()
   })
 
@@ -236,27 +246,16 @@ describe("AddFluxSheet — mode toggle & guards", () => {
     expect(mockedAdd).not.toHaveBeenCalled()
   })
 
-  it("fails closed when the token is missing (new flux)", async () => {
-    await setup()
+  it("fails closed when there is no instance to target", async () => {
+    const onClose = jest.fn()
+    renderWithProviders(
+      <AddFluxSheet visible onClose={onClose} instances={[]} onSuccess={jest.fn()} />,
+    )
+    fireEvent.press(screen.getByText("Ajouter un nouveau"))
     fireEvent.changeText(firstInput(), "facebook/react")
-    secureStore.getItemAsync.mockResolvedValue(null)
     fireEvent.press(screen.getByText("Ajouter"))
     await waitFor(() => expect(screen.getByText("Token manquant")).toBeTruthy())
     expect(mockedAdd).not.toHaveBeenCalled()
-  })
-
-  it("fails closed when the token is missing (existing flux)", async () => {
-    mockedGetFluxes.mockResolvedValue([
-      { id: 1, url: "https://a.example.com", config: {}, created_at: "", is_subscribed: false },
-    ])
-    await setup()
-    fireEvent.press(screen.getByText("RSS"))
-    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
-    fireEvent.press(screen.getByText("https://a.example.com"))
-    secureStore.getItemAsync.mockResolvedValue(null)
-    fireEvent.press(screen.getByText("Ajouter"))
-    await waitFor(() => expect(screen.getByText("Token manquant")).toBeTruthy())
-    expect(mockedSubscribe).not.toHaveBeenCalled()
   })
 
   it("falls back to a generic message when a non-Error is thrown", async () => {
@@ -281,16 +280,29 @@ describe("AddFluxSheet — mode toggle & guards", () => {
   })
 })
 
-describe("AddFluxSheet — degraded auth & payloads", () => {
-  it("loads the connector list anonymously and skips the flux fetch when no token is stored", async () => {
-    secureStore.getItemAsync.mockResolvedValue(null)
-    const onClose = jest.fn()
-    const onSuccess = jest.fn()
-    renderWithProviders(
-      <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} />,
+describe("AddFluxSheet — instance selector", () => {
+  it("fetches providers and fluxes against the picked instance", async () => {
+    const TOKEN_B = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: "bob" }))
+      .toString("base64")
+      .replace(/=/g, "")}.sig`
+    const two = [INSTANCES[0], { id: "i2", url: "https://b.test", name: "Beta", token: TOKEN_B }]
+    await setup({ instances: two })
+
+    fireEvent.press(screen.getByText("Beta"))
+
+    await waitFor(() =>
+      expect(mockedGetConnectorProviders).toHaveBeenLastCalledWith(TOKEN_B, "https://b.test"),
     )
-    await waitFor(() => expect(screen.getByText("Changelog")).toBeTruthy())
-    expect(mockedGetConnectorProviders).toHaveBeenCalledWith("", API_URL)
+  })
+})
+
+describe("AddFluxSheet — degraded auth & payloads", () => {
+  it("fetches nothing when there is no instance", async () => {
+    renderWithProviders(
+      <AddFluxSheet visible onClose={jest.fn()} instances={[]} onSuccess={jest.fn()} />,
+    )
+    await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
+    expect(mockedGetConnectorProviders).not.toHaveBeenCalled()
     expect(mockedGetFluxes).not.toHaveBeenCalled()
   })
 
@@ -305,7 +317,7 @@ describe("AddFluxSheet — degraded auth & payloads", () => {
     const onClose = jest.fn()
     const onSuccess = jest.fn()
     renderWithProviders(
-      <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} />,
+      <AddFluxSheet visible onClose={onClose} instances={INSTANCES} onSuccess={onSuccess} />,
     )
     await waitFor(() => expect(screen.getByText("custom")).toBeTruthy())
   })
@@ -317,7 +329,7 @@ describe("AddFluxSheet — network failures", () => {
     const onClose = jest.fn()
     const onSuccess = jest.fn()
     renderWithProviders(
-      <AddFluxSheet visible onClose={onClose} userId="user-1" onSuccess={onSuccess} />,
+      <AddFluxSheet visible onClose={onClose} instances={INSTANCES} onSuccess={onSuccess} />,
     )
     await waitFor(() => expect(screen.getByText("Ajouter un flux")).toBeTruthy())
     expect(screen.queryByText("Changelog")).toBeNull()

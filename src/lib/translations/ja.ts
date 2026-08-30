@@ -1,6 +1,24 @@
 import type { Translations } from "./en"
 
 export const ja: Translations = {
+  instances: {
+    title: "サーバー",
+    subtitle: "複数の API インスタンスのフィードをまとめて購読します。",
+    primary: "プライマリー",
+    add: "サーバーを追加",
+    urlLabel: "サーバー URL",
+    urlPlaceholder: "https://your-api.example.com",
+    cancel: "キャンセル",
+    next: "次へ",
+    makePrimary: "プライマリーにする",
+    reconnect: "再接続",
+    remove: "削除",
+    save: "保存",
+    expired: "セッションの期限切れ",
+    removePrimaryWarning: "プライマリーサーバーを削除すると、すべてからサインアウトします。",
+    unreachable: "到達不能",
+    manage: "サーバー",
+  },
   auth: {
     subtitle: "前回の続きから始めよう。",
     loginTitle: "おかえりなさい。",
