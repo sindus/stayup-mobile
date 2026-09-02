@@ -1,16 +1,23 @@
 import { screen, fireEvent, waitFor } from "@testing-library/react-native"
 import { InstancesSheet } from "@/components/instances/InstancesSheet"
-import { fetchAuthConfig } from "@/lib/api"
+import { probeApiUrl, type AuthConfig } from "@/lib/api"
 import { fr } from "@/lib/translations/fr"
 import { renderWithProviders } from "./render"
 
 jest.mock("@/lib/api", () => ({
-  fetchAuthConfig: jest.fn().mockResolvedValue(null),
+  probeApiUrl: jest.fn(),
   loginWithPassword: jest.fn(),
   registerWithPassword: jest.fn(),
 }))
 
-const mockedFetchConfig = fetchAuthConfig as jest.Mock
+const mockedProbe = probeApiUrl as jest.Mock
+
+const OK_CONFIG: AuthConfig = {
+  name: null,
+  registrationMode: "open",
+  emailPassword: true,
+  oauth: { github: true, google: true },
+}
 
 const primary = { id: "i1", url: "https://a.example.com", name: "Alpha", token: "jwt-a" }
 const secondary = { id: "i2", url: "https://b.example.com", name: "Beta", token: "jwt-b" }
@@ -27,6 +34,7 @@ function buildAuth() {
     loginOAuth: jest.fn(),
     logout: jest.fn(),
     addInstance: jest.fn().mockResolvedValue(null),
+    registerInstance: jest.fn().mockResolvedValue({}),
     reconnectInstance: jest.fn().mockResolvedValue(null),
     removeInstance: jest.fn().mockResolvedValue(undefined),
     renameInstance: jest.fn().mockResolvedValue(undefined),
@@ -42,7 +50,7 @@ function renderSheet(auth = buildAuth()) {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockedFetchConfig.mockResolvedValue(null)
+  mockedProbe.mockResolvedValue({ ok: true, config: OK_CONFIG })
 })
 
 describe("InstancesSheet", () => {
@@ -89,7 +97,7 @@ describe("InstancesSheet", () => {
     )
     fireEvent.press(screen.getByText(fr.instances.next))
 
-    await waitFor(() => expect(fetchAuthConfig).toHaveBeenCalledWith("https://c.example.com"))
+    await waitFor(() => expect(probeApiUrl).toHaveBeenCalledWith("https://c.example.com"))
 
     fireEvent.changeText(screen.getByPlaceholderText("ton@email.com"), "u@x.io")
     fireEvent.changeText(screen.getByPlaceholderText("mot de passe"), "pw")
@@ -102,6 +110,63 @@ describe("InstancesSheet", () => {
         password: "pw",
       }),
     )
+  })
+
+  async function openConnectForm(value = "https://c.example.com") {
+    fireEvent.press(screen.getByText(fr.instances.add))
+    fireEvent.changeText(screen.getByPlaceholderText(fr.instances.urlPlaceholder), value)
+    fireEvent.press(screen.getByText(fr.instances.next))
+    await screen.findByPlaceholderText("ton@email.com")
+  }
+
+  it("creates an account on the new server via the register form", async () => {
+    const { auth } = renderSheet()
+    await openConnectForm()
+
+    fireEvent.press(screen.getByText(fr.auth.signUp)) // toggle → register
+    fireEvent.changeText(screen.getByPlaceholderText(fr.auth.namePlaceholder), "Bea")
+    fireEvent.changeText(screen.getByPlaceholderText("ton@email.com"), "bea@x.io")
+    fireEvent.changeText(screen.getByPlaceholderText("mot de passe"), "pass1234")
+    fireEvent.press(screen.getByText(fr.auth.signUp)) // register submit
+
+    await waitFor(() =>
+      expect(auth.registerInstance).toHaveBeenCalledWith("https://c.example.com", {
+        name: "Bea",
+        email: "bea@x.io",
+        password: "pass1234",
+      }),
+    )
+  })
+
+  it("shows the pending-approval notice when the server needs admin approval", async () => {
+    const auth = {
+      ...buildAuth(),
+      registerInstance: jest.fn().mockResolvedValue({ pending: true }),
+    }
+    renderSheet(auth)
+    await openConnectForm()
+
+    fireEvent.press(screen.getByText(fr.auth.signUp))
+    fireEvent.changeText(screen.getByPlaceholderText(fr.auth.namePlaceholder), "Bea")
+    fireEvent.changeText(screen.getByPlaceholderText("ton@email.com"), "bea@x.io")
+    fireEvent.changeText(screen.getByPlaceholderText("mot de passe"), "pass1234")
+    fireEvent.press(screen.getByText(fr.auth.signUp))
+
+    expect(await screen.findByText(fr.auth.accountPending)).toBeTruthy()
+    expect(screen.queryByPlaceholderText(fr.instances.urlPlaceholder)).toBeNull()
+  })
+
+  it("shows the approval hint in the register form for an approval-mode server", async () => {
+    mockedProbe.mockResolvedValue({
+      ok: true,
+      config: { ...OK_CONFIG, registrationMode: "approval" },
+    })
+    renderSheet()
+    await openConnectForm()
+
+    expect(screen.queryByText(fr.auth.pendingApprovalHint)).toBeNull()
+    fireEvent.press(screen.getByText(fr.auth.signUp))
+    expect(screen.getByText(fr.auth.pendingApprovalHint)).toBeTruthy()
   })
 
   it("adds an instance through an OAuth provider", async () => {
@@ -199,17 +264,32 @@ describe("InstancesSheet", () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it("still offers a connect form when the URL check throws", async () => {
-    mockedFetchConfig.mockRejectedValue(new Error("offline"))
+  it("rejects an unreachable URL and never shows the connect form", async () => {
+    mockedProbe.mockResolvedValue({ ok: false, reason: "unreachable" })
     renderSheet()
     fireEvent.press(screen.getByText(fr.instances.add))
     fireEvent.changeText(
       screen.getByPlaceholderText(fr.instances.urlPlaceholder),
-      "https://c.example.com",
+      "https://nope.example.com",
     )
     fireEvent.press(screen.getByText(fr.instances.next))
 
-    expect(await screen.findByText(fr.auth.continueWithGitHub)).toBeTruthy()
+    expect(await screen.findByText(fr.instances.urlUnreachable)).toBeTruthy()
+    expect(screen.queryByText(fr.auth.continueWithGitHub)).toBeNull()
+  })
+
+  it("rejects a URL that is not a StayUp API", async () => {
+    mockedProbe.mockResolvedValue({ ok: false, reason: "incompatible" })
+    renderSheet()
+    fireEvent.press(screen.getByText(fr.instances.add))
+    fireEvent.changeText(
+      screen.getByPlaceholderText(fr.instances.urlPlaceholder),
+      "https://example.com",
+    )
+    fireEvent.press(screen.getByText(fr.instances.next))
+
+    expect(await screen.findByText(fr.instances.urlIncompatible)).toBeTruthy()
+    expect(screen.queryByText(fr.auth.continueWithGitHub)).toBeNull()
   })
 
   it("reconnects an expired session through an OAuth provider", async () => {

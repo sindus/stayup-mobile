@@ -19,6 +19,8 @@ export const de: Translations = {
     unreachable: "Nicht erreichbar",
     reconnectPrompt: "Bei diesen Servern musst du dich neu anmelden:",
     manage: "Server",
+    urlUnreachable: "Server nicht erreichbar.",
+    urlIncompatible: "Diese URL ist keine StayUp-API.",
   },
   serverStatus: {
     title: "Serverstatus",
@@ -26,6 +28,8 @@ export const de: Translations = {
     disconnected: "Getrennt",
   },
   auth: {
+    accountPending:
+      "Konto erstellt. Ein Administrator muss es freigeben, bevor du dich anmelden kannst.",
     subtitle: "Mach da weiter, wo du aufgehört hast.",
     loginTitle: "Schön, dich wiederzusehen.",
     registerTitle: "Erstelle dein Konto.",

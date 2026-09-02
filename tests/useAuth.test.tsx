@@ -141,6 +141,15 @@ describe("login / register", () => {
     expect(result.current.error).toBe(en.errors.emailTaken)
   })
 
+  it("surfaces the pending-approval message and stores nothing in approval mode", async () => {
+    mockedRegister.mockResolvedValue({ pending: true })
+    const { result } = renderAuth()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(() => result.current.register("J", "j@x.io", "pw123456"))
+    expect(result.current.error).toBe(en.auth.accountPending)
+    expect(upsertPrimaryInstance).not.toHaveBeenCalled()
+  })
+
   it("falls back to a generic message otherwise", async () => {
     mockedLogin.mockRejectedValue("boom")
     const { result } = renderAuth()
@@ -261,6 +270,64 @@ describe("secondary instances", () => {
       })
     })
     expect(err).toBe(en.errors.invalidCredentials)
+  })
+
+  it("registers a new account on an instance and adds it", async () => {
+    ;(fetchAuthConfig as jest.Mock).mockResolvedValue(null)
+    mockedRegister.mockResolvedValue({ token: validToken })
+    const { result } = renderAuth()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    let res: { pending?: boolean; error?: string } = {}
+    await act(async () => {
+      res = await result.current.registerInstance("https://b.io", {
+        name: "Bea",
+        email: "bea@b.io",
+        password: "pass1234",
+      })
+    })
+
+    expect(res).toEqual({})
+    expect(mockedRegister).toHaveBeenCalledWith("Bea", "bea@b.io", "pass1234", "https://b.io")
+    expect(addInstance).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "https://b.io", token: validToken }),
+    )
+  })
+
+  it("returns { pending } and stores nothing when the instance needs approval", async () => {
+    mockedRegister.mockResolvedValue({ pending: true })
+    const { result } = renderAuth()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    let res: { pending?: boolean; error?: string } = {}
+    await act(async () => {
+      res = await result.current.registerInstance("https://b.io", {
+        name: "Bea",
+        email: "bea@b.io",
+        password: "pass1234",
+      })
+    })
+
+    expect(res).toEqual({ pending: true })
+    expect(addInstance).not.toHaveBeenCalled()
+  })
+
+  it("returns a translated error when registration fails", async () => {
+    mockedRegister.mockRejectedValue(new ApiError(409, "taken"))
+    const { result } = renderAuth()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    let res: { pending?: boolean; error?: string } = {}
+    await act(async () => {
+      res = await result.current.registerInstance("https://b.io", {
+        name: "Bea",
+        email: "taken@b.io",
+        password: "pass1234",
+      })
+    })
+
+    expect(res).toEqual({ error: en.errors.emailTaken })
+    expect(addInstance).not.toHaveBeenCalled()
   })
 
   it("reconnects, and reports an unknown id", async () => {

@@ -3,8 +3,9 @@ import { Modal, View, Text, TextInput, Pressable, ScrollView } from "react-nativ
 import { X, Star, Trash2, RefreshCw, Plus } from "lucide-react-native"
 import { useLanguage } from "@/context/LanguageContext"
 import { LoginForm } from "@/components/auth/LoginForm"
+import { RegisterForm } from "@/components/auth/RegisterForm"
 import { OAuthButtons } from "@/components/auth/OAuthButtons"
-import { type AuthConfig, fetchAuthConfig } from "@/lib/api"
+import { type AuthConfig, probeApiUrl } from "@/lib/api"
 import { hostOf } from "@/lib/store"
 import { colors } from "@/theme"
 import type { useAuth } from "@/hooks/useAuth"
@@ -24,14 +25,20 @@ function ConnectForm({
   error,
   onPassword,
   onOAuth,
+  onRegister,
 }: {
   config: AuthConfig | null
   loading: boolean
   error: string | null
   onPassword: (email: string, password: string) => void
   onOAuth: (provider: "github" | "google") => void
+  onRegister?: (name: string, email: string, password: string) => void
 }) {
+  const { t } = useLanguage()
+  const [mode, setMode] = useState<"login" | "register">("login")
   const oauth = config?.oauth ?? { github: true, google: true }
+  const canRegister = !!onRegister && (config?.emailPassword ?? true)
+
   return (
     <View className="gap-3">
       {(oauth.github || oauth.google) && (
@@ -43,13 +50,38 @@ function ConnectForm({
           providers={oauth}
         />
       )}
-      <LoginForm
-        onSubmit={async (e, p) => {
-          onPassword(e, p)
-        }}
-        loading={loading}
-        error={error}
-      />
+      {canRegister && mode === "register" ? (
+        <RegisterForm
+          onSubmit={async (n, e, p) => {
+            onRegister?.(n, e, p)
+          }}
+          loading={loading}
+          error={error}
+        />
+      ) : (
+        <LoginForm
+          onSubmit={async (e, p) => {
+            onPassword(e, p)
+          }}
+          loading={loading}
+          error={error}
+        />
+      )}
+      {canRegister && (
+        <Pressable onPress={() => setMode(mode === "login" ? "register" : "login")}>
+          <Text className="text-center text-[12px]" style={{ color: colors.muted }}>
+            {mode === "login" ? t.auth.noAccount : t.auth.alreadyHaveAccount}{" "}
+            <Text style={{ color: colors.fg, fontWeight: "600" }}>
+              {mode === "login" ? t.auth.signUp : t.auth.signIn}
+            </Text>
+          </Text>
+        </Pressable>
+      )}
+      {canRegister && mode === "register" && config?.registrationMode === "approval" && (
+        <Text className="text-[12px]" style={{ color: colors.muted }}>
+          {t.auth.pendingApprovalHint}
+        </Text>
+      )}
     </View>
   )
 }
@@ -60,6 +92,7 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
     instances,
     sessions,
     addInstance,
+    registerInstance,
     reconnectInstance,
     removeInstance,
     renameInstance,
@@ -72,6 +105,9 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
   const [checked, setChecked] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Confirmation « compte créé, en attente d'un admin » : survit à la fermeture
+  // du formulaire d'ajout, contrairement à `error`.
+  const [notice, setNotice] = useState<string | null>(null)
   const [reconnectId, setReconnectId] = useState<string | null>(null)
 
   const brokenIds = useMemo(
@@ -101,9 +137,16 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
   async function checkUrl() {
     setBusy(true)
     setError(null)
-    setConfig(await fetchAuthConfig(url.trim()).catch(() => null))
-    setChecked(true)
+    const probe = await probeApiUrl(url.trim())
     setBusy(false)
+    if (!probe.ok) {
+      setError(
+        probe.reason === "unreachable" ? t.instances.urlUnreachable : t.instances.urlIncompatible,
+      )
+      return
+    }
+    setConfig(probe.config)
+    setChecked(true)
   }
 
   async function runAdd(method: Parameters<typeof addInstance>[1]) {
@@ -113,6 +156,19 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
     setBusy(false)
     if (err) setError(err)
     else resetAdd()
+  }
+
+  async function runRegister(name: string, email: string, password: string) {
+    setBusy(true)
+    setError(null)
+    const res = await registerInstance(url.trim(), { name, email, password })
+    setBusy(false)
+    if (res.error) {
+      setError(res.error)
+      return
+    }
+    if (res.pending) setNotice(t.auth.accountPending)
+    resetAdd()
   }
 
   async function runReconnect(id: string, method: Parameters<typeof reconnectInstance>[1]) {
@@ -252,9 +308,23 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
               )
             })}
 
+            {notice && (
+              <View
+                className="mt-2 rounded-lg px-3 py-2"
+                style={{ backgroundColor: colors.sageDim }}
+              >
+                <Text className="text-[13px]" style={{ color: colors.sage }}>
+                  {notice}
+                </Text>
+              </View>
+            )}
+
             {!adding ? (
               <Pressable
-                onPress={() => setAdding(true)}
+                onPress={() => {
+                  setNotice(null)
+                  setAdding(true)
+                }}
                 className="mt-2 flex-row items-center gap-1.5 self-start rounded-md border px-3 py-2"
                 style={{ borderColor: colors.border }}
               >
@@ -302,6 +372,12 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
                   </Pressable>
                 </View>
 
+                {error && !checked && (
+                  <Text className="mt-2 text-[12px]" style={{ color: colors.rose }}>
+                    {error}
+                  </Text>
+                )}
+
                 {checked && (
                   <View className="mt-3">
                     <ConnectForm
@@ -312,6 +388,7 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
                         void runAdd({ kind: "password", email: e, password: p })
                       }
                       onOAuth={(provider) => void runAdd({ kind: "oauth", provider })}
+                      onRegister={(n, e, p) => void runRegister(n, e, p)}
                     />
                   </View>
                 )}

@@ -19,6 +19,8 @@ export const fr: Translations = {
     unreachable: "Injoignable",
     reconnectPrompt: "Ces serveurs demandent une reconnexion :",
     manage: "Serveurs",
+    urlUnreachable: "Serveur injoignable.",
+    urlIncompatible: "Cette URL n'est pas une API StayUp.",
   },
   serverStatus: {
     title: "État des serveurs",
@@ -26,6 +28,8 @@ export const fr: Translations = {
     disconnected: "Déconnecté",
   },
   auth: {
+    accountPending:
+      "Compte créé. Un administrateur doit le valider avant que tu puisses te connecter.",
     subtitle: "Reprends ta lecture là où tu l'avais laissée.",
     loginTitle: "Content de te revoir.",
     registerTitle: "Crée ton compte.",

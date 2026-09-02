@@ -217,7 +217,7 @@ describe("RegisterScreen", () => {
   })
 
   it("registers through the form", async () => {
-    mockedRegister.mockResolvedValue(validToken())
+    mockedRegister.mockResolvedValue({ token: validToken() })
     renderWithProviders(<RegisterScreen />)
     await waitFor(() => expect(screen.getByText("Créer un compte")).toBeTruthy())
 

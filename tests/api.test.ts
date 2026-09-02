@@ -143,9 +143,16 @@ describe("getConnectorProviders", () => {
 describe("registerWithPassword", () => {
   it("returns the token on success", async () => {
     mockFetch(200, { token: "tok-new" })
-    await expect(registerWithPassword("Sika", "a@b.com", "password", API_URL)).resolves.toBe(
-      "tok-new",
-    )
+    await expect(registerWithPassword("Sika", "a@b.com", "password", API_URL)).resolves.toEqual({
+      token: "tok-new",
+    })
+  })
+
+  it("reports a pending account when the instance needs admin approval", async () => {
+    mockFetch(202, {})
+    await expect(registerWithPassword("Sika", "a@b.com", "password", API_URL)).resolves.toEqual({
+      pending: true,
+    })
   })
 
   it("throws an ApiError carrying the 409", async () => {

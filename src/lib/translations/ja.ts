@@ -19,6 +19,8 @@ export const ja: Translations = {
     unreachable: "到達不能",
     reconnectPrompt: "次のサーバーへの再ログインが必要です：",
     manage: "サーバー",
+    urlUnreachable: "そのサーバーに接続できません。",
+    urlIncompatible: "この URL は StayUp API ではありません。",
   },
   serverStatus: {
     title: "サーバーの状態",
@@ -26,6 +28,7 @@ export const ja: Translations = {
     disconnected: "切断",
   },
   auth: {
+    accountPending: "アカウントを作成しました。ログインするには管理者の承認が必要です。",
     subtitle: "前回の続きから始めよう。",
     loginTitle: "おかえりなさい。",
     registerTitle: "アカウントを作成しよう。",
