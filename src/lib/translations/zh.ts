@@ -17,6 +17,7 @@ export const zh: Translations = {
     expired: "会话已过期",
     removePrimaryWarning: "移除主服务器会让你退出所有登录。",
     unreachable: "无法访问",
+    reconnectPrompt: "以下服务器需要重新登录：",
     manage: "服务器",
   },
   auth: {

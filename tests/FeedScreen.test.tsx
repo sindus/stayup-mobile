@@ -17,6 +17,15 @@ jest.mock("@/lib/api", () => ({
 
   getProviderFluxes: jest.fn().mockResolvedValue([]),
   subscribeFlux: jest.fn(),
+  fetchAuthConfig: jest.fn().mockResolvedValue(null),
+  ApiError: class ApiError extends Error {
+    status: number
+    constructor(status: number, message: string) {
+      super(message)
+      this.name = "ApiError"
+      this.status = status
+    }
+  },
 }))
 
 const secureStore = SecureStore as unknown as { getItemAsync: jest.Mock }
@@ -239,6 +248,31 @@ describe("FeedScreen — multi-instance", () => {
 
     await waitFor(() => expect(screen.getByText(/Injoignable/)).toBeTruthy())
     expect(screen.getByText("Article A")).toBeTruthy()
+    // A transient failure is a retry situation, not a reconnection prompt.
+    expect(screen.queryByText(/Ces serveurs demandent une reconnexion/)).toBeNull()
+  })
+
+  it("pushes the reconnect sheet when a session has expired, and lets it be dismissed", async () => {
+    const expiredToken = () =>
+      `${btoa("{}")}.${btoa(
+        JSON.stringify({ sub: "user-1", exp: Math.floor(Date.now() / 1000) - 10 }),
+      )}.sig`
+    secureStore.getItemAsync.mockImplementation((k: string) =>
+      Promise.resolve(k === `tok_${INSTANCE_ID}` ? expiredToken() : null),
+    )
+
+    renderWithProviders(<FeedScreen />)
+
+    await waitFor(() =>
+      expect(screen.getByText(/Ces serveurs demandent une reconnexion/)).toBeTruthy(),
+    )
+    // Not surfaced as the transient "unreachable" strip.
+    expect(screen.queryByText(/Injoignable/)).toBeNull()
+
+    fireEvent.press(screen.getAllByTestId("icon-X")[0])
+    await waitFor(() =>
+      expect(screen.queryByText(/Ces serveurs demandent une reconnexion/)).toBeNull(),
+    )
   })
 })
 

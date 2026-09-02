@@ -17,6 +17,7 @@ export const ja: Translations = {
     expired: "セッションの期限切れ",
     removePrimaryWarning: "プライマリーサーバーを削除すると、すべてからサインアウトします。",
     unreachable: "到達不能",
+    reconnectPrompt: "次のサーバーへの再ログインが必要です：",
     manage: "サーバー",
   },
   auth: {

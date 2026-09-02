@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Modal, View, Text, TextInput, Pressable, ScrollView } from "react-native"
 import { X, Star, Trash2, RefreshCw, Plus } from "lucide-react-native"
 import { useLanguage } from "@/context/LanguageContext"
@@ -13,6 +13,9 @@ interface InstancesSheetProps {
   visible: boolean
   onClose: () => void
   auth: ReturnType<typeof useAuth>
+  /** Instances dont la session est morte : la feuille montre un bandeau et déplie
+   *  d'office le formulaire de reconnexion de la première. */
+  autoReason?: { instanceId: string; instanceName: string }[]
 }
 
 function ConnectForm({
@@ -51,7 +54,7 @@ function ConnectForm({
   )
 }
 
-export function InstancesSheet({ visible, onClose, auth }: InstancesSheetProps) {
+export function InstancesSheet({ visible, onClose, auth, autoReason }: InstancesSheetProps) {
   const { t } = useLanguage()
   const {
     instances,
@@ -70,6 +73,20 @@ export function InstancesSheet({ visible, onClose, auth }: InstancesSheetProps) 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reconnectId, setReconnectId] = useState<string | null>(null)
+
+  const brokenIds = useMemo(
+    () => new Set((autoReason ?? []).map((a) => a.instanceId)),
+    [autoReason],
+  )
+
+  // Reconnexion poussée automatiquement : déplie d'office le formulaire de la
+  // première instance concernée, sans écraser un choix déjà fait.
+  useEffect(() => {
+    if (autoReason && autoReason.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReconnectId((cur) => cur ?? autoReason[0].instanceId)
+    }
+  }, [autoReason])
 
   const sessionById = new Map(sessions.map((s) => [s.instanceId, s]))
 
@@ -131,6 +148,14 @@ export function InstancesSheet({ visible, onClose, auth }: InstancesSheetProps) 
             {t.instances.subtitle}
           </Text>
 
+          {autoReason && autoReason.length > 0 && (
+            <View className="mb-4 rounded-lg px-3 py-2" style={{ backgroundColor: colors.roseDim }}>
+              <Text className="text-[13px]" style={{ color: colors.rose }}>
+                {t.instances.reconnectPrompt} {autoReason.map((a) => a.instanceName).join(", ")}
+              </Text>
+            </View>
+          )}
+
           <ScrollView className="grow-0">
             {instances.map((inst, i) => {
               const s = sessionById.get(inst.id)
@@ -165,7 +190,7 @@ export function InstancesSheet({ visible, onClose, auth }: InstancesSheetProps) 
                   <Text className="mt-0.5 text-[12px] font-mono" style={{ color: colors.dim }}>
                     {hostOf(inst.url)}
                   </Text>
-                  {s?.expired && (
+                  {(s?.expired || brokenIds.has(inst.id)) && (
                     <Text className="mt-1 text-[12px]" style={{ color: colors.rose }}>
                       {t.instances.expired}
                     </Text>
@@ -184,7 +209,7 @@ export function InstancesSheet({ visible, onClose, auth }: InstancesSheetProps) 
                         </Text>
                       </Pressable>
                     )}
-                    {s?.expired && (
+                    {(s?.expired || brokenIds.has(inst.id)) && (
                       <Pressable
                         onPress={() => setReconnectId(reconnectId === inst.id ? null : inst.id)}
                         className="flex-row items-center gap-1 rounded border px-2 py-1"

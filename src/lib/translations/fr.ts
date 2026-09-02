@@ -17,6 +17,7 @@ export const fr: Translations = {
     expired: "Session expirée",
     removePrimaryWarning: "Retirer ton serveur primaire te déconnecte de tout.",
     unreachable: "Injoignable",
+    reconnectPrompt: "Ces serveurs demandent une reconnexion :",
     manage: "Serveurs",
   },
   auth: {

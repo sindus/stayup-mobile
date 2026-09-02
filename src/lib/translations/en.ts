@@ -15,6 +15,7 @@ export const en = {
     expired: "Session expired",
     removePrimaryWarning: "Removing your primary server signs you out of everything.",
     unreachable: "Unreachable",
+    reconnectPrompt: "These servers need you to sign in again:",
     manage: "Servers",
   },
   auth: {

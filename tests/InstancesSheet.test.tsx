@@ -161,6 +161,23 @@ describe("InstancesSheet", () => {
     )
   })
 
+  it("with autoReason, banners the dead sessions and opens the first reconnect form", () => {
+    const onClose = jest.fn()
+    renderWithProviders(
+      <InstancesSheet
+        visible
+        onClose={onClose}
+        auth={buildAuth() as never}
+        autoReason={[{ instanceId: "i2", instanceName: "Beta" }]}
+      />,
+    )
+    expect(screen.getByText(new RegExp(`${fr.instances.reconnectPrompt}.*Beta`))).toBeTruthy()
+    // Reconnect UI shows even though the session is not locally `expired`…
+    expect(screen.getByText(fr.instances.expired)).toBeTruthy()
+    // …and its form is already expanded.
+    expect(screen.getByPlaceholderText("ton@email.com")).toBeTruthy()
+  })
+
   it("cancels the add form", () => {
     renderSheet()
     fireEvent.press(screen.getByText(fr.instances.add))
