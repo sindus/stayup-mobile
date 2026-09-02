@@ -57,12 +57,6 @@ export const ja: Translations = {
     filterAll: "すべて",
     filterUnread: "未読",
     markAllRead: "すべて既読にする",
-    providers: {
-      changelog: "GitHub",
-      youtube: "YouTube",
-      rss: "RSS",
-      scrap: "Web",
-    },
   },
   importExport: {
     export: "フィードをエクスポート",
@@ -79,15 +73,9 @@ export const ja: Translations = {
     description: "ソースを選べば、あとはおまかせ。",
     provider: "プロバイダー",
     identifierLabels: {
-      changelog: "GitHubリポジトリ",
-      youtube: "YouTubeチャンネル",
-      rss: "RSSフィードURL",
       generic: "URL",
     },
     placeholders: {
-      changelog: "例：facebook/react",
-      youtube: "例：fireship",
-      rss: "例：https://example.com/feed.xml",
       generic: "https://example.com",
     },
     scrapRepo: "利用可能なフィード",

@@ -7,7 +7,6 @@ import { useLanguage } from "@/context/LanguageContext"
 import { deleteUserRepository } from "@/lib/api"
 import { decodeToken } from "@/lib/session"
 import type { Instance } from "@/lib/store"
-import { stripUrlScheme } from "@/lib/utils"
 import { colors, getProviderMeta } from "@/theme"
 import { providerIcon } from "./providerIcons"
 import type { ProviderMeta } from "@/lib/providerTemplate"
@@ -205,7 +204,7 @@ export function FeedFluxList({
                         style={{ color: colors.fgSoft }}
                         numberOfLines={1}
                       >
-                        {stripUrlScheme(flux.identifier)}
+                        {flux.identifier}
                       </Text>
                       {multiInstance && (
                         <Text

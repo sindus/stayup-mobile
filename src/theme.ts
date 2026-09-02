@@ -2,7 +2,7 @@
  * Aurora design tokens — TypeScript module
  *
  * StayUp Mobile (React Native + Expo) theme module.
- * Import from anywhere: `import { colors, provider } from '@/theme'`.
+ * Import from anywhere: `import { colors } from '@/theme'`.
  */
 
 export const colors = {
@@ -60,16 +60,6 @@ export const motion = {
   spin: 900,
 } as const
 
-// Provider color mapping (for icons, version chips, focus borders)
-export const provider = {
-  changelog: { color: colors.peach, dim: colors.peachDim, label: "GitHub" },
-  youtube: { color: colors.rose, dim: colors.roseDim, label: "YouTube" },
-  rss: { color: colors.sage, dim: colors.sageDim, label: "RSS" },
-  scrap: { color: colors.sky, dim: colors.skyDim, label: "Web" },
-} as const
-
-export type ProviderKey = keyof typeof provider
-
 // Métadonnées d'affichage d'un provider, dérivées de son template
 // (provider_registry.template). Sans template : couleur neutre + nom capitalisé.
 export function getProviderMeta(
@@ -91,6 +81,6 @@ export function getProviderMeta(
   }
 }
 
-export const aurora = { colors, fonts, motion, provider } as const
+export const aurora = { colors, fonts, motion } as const
 
 export default aurora

@@ -58,12 +58,6 @@ export const fr: Translations = {
     filterAll: "Tous",
     filterUnread: "Non lu",
     markAllRead: "Tout marquer lu",
-    providers: {
-      changelog: "GitHub",
-      youtube: "YouTube",
-      rss: "RSS",
-      scrap: "Web",
-    },
   },
   importExport: {
     export: "Exporter les flux",
@@ -80,15 +74,9 @@ export const fr: Translations = {
     description: "Choisis une source, on s'occupe du reste.",
     provider: "Provider",
     identifierLabels: {
-      changelog: "Dépôt GitHub",
-      youtube: "Chaîne YouTube",
-      rss: "URL du flux RSS",
       generic: "URL",
     },
     placeholders: {
-      changelog: "ex: facebook/react",
-      youtube: "ex: fireship",
-      rss: "ex: https://example.com/feed.xml",
       generic: "https://exemple.com",
     },
     scrapRepo: "Flux disponible",

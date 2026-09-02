@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useReadItemsStore, getTaggedItemId } from "../src/store/readItems"
 import { useNavigationStore } from "../src/store/navigation"
-import { useFeedReaderStore } from "../src/store/feedReader"
 import { useSelectedFeedItemStore } from "../src/store/selectedFeedItem"
 import type { TaggedItem } from "../src/types"
 
@@ -27,7 +26,6 @@ beforeEach(() => {
   asyncStorage.getItem.mockResolvedValue(null)
   useReadItemsStore.setState({ readIds: new Set(), initialized: false })
   useNavigationStore.setState({ selection: { type: "all" } })
-  useFeedReaderStore.setState({ articles: [], index: 0 })
   useSelectedFeedItemStore.setState({ item: null, repoUrl: "" })
 })
 
@@ -135,19 +133,6 @@ describe("useNavigationStore", () => {
       fluxId: "a",
       provider: "rss",
     })
-  })
-})
-
-describe("useFeedReaderStore", () => {
-  it("opens the reader on the requested article", () => {
-    const articles = [
-      { title: "A", provider: "rss" as const, date: "2026-01-01" },
-      { title: "B", provider: "rss" as const, date: "2026-01-02" },
-    ]
-    useFeedReaderStore.getState().open(articles, 1)
-
-    expect(useFeedReaderStore.getState().articles).toEqual(articles)
-    expect(useFeedReaderStore.getState().index).toBe(1)
   })
 })
 

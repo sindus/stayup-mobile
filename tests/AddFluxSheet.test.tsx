@@ -138,10 +138,10 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     const { onSuccess } = await setup()
     fireEvent.press(screen.getByText("RSS"))
 
-    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
-    expect(screen.queryByText("https://b.example.com")).toBeNull()
+    await waitFor(() => expect(screen.getByText("a.example")).toBeTruthy())
+    expect(screen.queryByText("b.example")).toBeNull()
 
-    fireEvent.press(screen.getByText("https://a.example.com"))
+    fireEvent.press(screen.getByText("a.example"))
     fireEvent.press(screen.getByText("Ajouter"))
 
     await waitFor(() =>
@@ -165,10 +165,10 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     const { onSuccess } = await setup()
     fireEvent.press(screen.getByText("RSS"))
 
-    await waitFor(() => expect(screen.getByText("https://ext.example.com")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("ext.example")).toBeTruthy())
     expect(screen.getByText("Team feeds")).toBeTruthy()
 
-    fireEvent.press(screen.getByText("https://ext.example.com"))
+    fireEvent.press(screen.getByText("ext.example"))
     fireEvent.press(screen.getByText("Ajouter"))
 
     await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledWith("rss", 3, TOKEN, API_URL, 7))
@@ -181,7 +181,7 @@ describe("AddFluxSheet — subscribe to an existing flux", () => {
     ])
     await setup()
     fireEvent.press(screen.getByText("RSS"))
-    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("a.example")).toBeTruthy())
 
     fireEvent.press(screen.getByText("Ajouter"))
     await waitFor(() => expect(screen.getByText("Sélectionnez un flux")).toBeTruthy())
@@ -216,13 +216,13 @@ describe("AddFluxSheet — mode toggle & guards", () => {
     ])
     await setup()
     fireEvent.press(screen.getByText("RSS"))
-    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("a.example")).toBeTruthy())
 
     fireEvent.press(screen.getByText("Ajouter un nouveau"))
     await waitFor(() => expect(screen.getByText("RSS/Atom feed URL")).toBeTruthy())
 
     fireEvent.press(screen.getByText("Choisir un flux existant"))
-    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
+    await waitFor(() => expect(screen.getByText("a.example")).toBeTruthy())
   })
 
   it("shows 'no flux available' when every flux is already followed", async () => {
@@ -273,8 +273,8 @@ describe("AddFluxSheet — mode toggle & guards", () => {
     mockedSubscribe.mockRejectedValue("boom")
     await setup()
     fireEvent.press(screen.getByText("RSS"))
-    await waitFor(() => expect(screen.getByText("https://a.example.com")).toBeTruthy())
-    fireEvent.press(screen.getByText("https://a.example.com"))
+    await waitFor(() => expect(screen.getByText("a.example")).toBeTruthy())
+    fireEvent.press(screen.getByText("a.example"))
     fireEvent.press(screen.getByText("Ajouter"))
     await waitFor(() => expect(screen.getByText("Une erreur est survenue.")).toBeTruthy())
   })

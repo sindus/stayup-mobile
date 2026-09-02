@@ -29,22 +29,10 @@ describe("translations", () => {
     }
   })
 
-  it("keeps a label for every provider", () => {
-    for (const dict of Object.values(dictionaries)) {
-      expect(Object.keys(dict.feed.providers).sort()).toEqual([
-        "changelog",
-        "rss",
-        "scrap",
-        "youtube",
-      ])
-    }
-  })
-
   it("no longer exposes documentation keys", () => {
     for (const dict of Object.values(dictionaries)) {
       expect(dict).not.toHaveProperty("documentation")
       expect(dict.tabs).not.toHaveProperty("docs")
-      expect(dict.feed.providers).not.toHaveProperty("documentation")
     }
   })
 })
