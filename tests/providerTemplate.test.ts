@@ -436,6 +436,24 @@ describe("resolveFeedLabel", () => {
     expect(resolveFeedLabel(tpl, { url: "https://site.test/y" })).toBe("site.test/y")
     expect(resolveFeedLabel(undefined, {})).toBe("")
   })
+
+  it("with an array feedLabel, takes config.title when set, else the domain", () => {
+    const tpl: ProviderTemplate = {
+      version: 1,
+      display: {
+        feedLabel: [{ path: "$source.config.title" }, { path: "$source.url", format: "domain" }],
+      },
+    }
+    expect(
+      resolveFeedLabel(tpl, {
+        url: "https://blog.stephane-robert.info/rss.xml",
+        config: { title: "Le blog de Stéphane Robert" },
+      }),
+    ).toBe("Le blog de Stéphane Robert")
+    expect(
+      resolveFeedLabel(tpl, { url: "https://blog.stephane-robert.info/rss.xml", config: {} }),
+    ).toBe("blog.stephane-robert")
+  })
 })
 
 describe("applyFormTransform", () => {

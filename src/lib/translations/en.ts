@@ -18,6 +18,11 @@ export const en = {
     reconnectPrompt: "These servers need you to sign in again:",
     manage: "Servers",
   },
+  serverStatus: {
+    title: "Server status",
+    connected: "Connected",
+    disconnected: "Disconnected",
+  },
   auth: {
     subtitle: "Pick up right where you left off.",
     loginTitle: "Good to see you again.",

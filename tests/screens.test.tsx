@@ -111,6 +111,25 @@ describe("Layouts", () => {
     await waitFor(() => expect(screen.getByTestId("icon-Rss")).toBeTruthy())
     expect(screen.queryByTestId("icon-BookOpen")).toBeNull()
   })
+
+  it("AppLayout shows no status alert on the profile tab when every server is live", async () => {
+    secureStore.getItemAsync.mockResolvedValue(validToken())
+    renderWithProviders(<AppLayout />)
+
+    await waitFor(() => expect(screen.getByTestId("icon-User")).toBeTruthy())
+    expect(screen.queryByTestId("server-status-alert")).toBeNull()
+  })
+
+  it("AppLayout flags the profile tab when a server session is expired", async () => {
+    const expiredToken = () =>
+      `${btoa("{}")}.${btoa(
+        JSON.stringify({ sub: "user-1", role: "user", exp: Math.floor(Date.now() / 1000) - 10 }),
+      )}.sig`
+    secureStore.getItemAsync.mockResolvedValue(expiredToken())
+    renderWithProviders(<AppLayout />)
+
+    await waitFor(() => expect(screen.getByTestId("server-status-alert")).toBeTruthy())
+  })
 })
 
 describe("LoginScreen", () => {

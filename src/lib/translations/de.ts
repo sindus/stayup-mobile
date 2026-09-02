@@ -20,6 +20,11 @@ export const de: Translations = {
     reconnectPrompt: "Bei diesen Servern musst du dich neu anmelden:",
     manage: "Server",
   },
+  serverStatus: {
+    title: "Serverstatus",
+    connected: "Verbunden",
+    disconnected: "Getrennt",
+  },
   auth: {
     subtitle: "Mach da weiter, wo du aufgehört hast.",
     loginTitle: "Schön, dich wiederzusehen.",

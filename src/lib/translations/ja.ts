@@ -20,6 +20,11 @@ export const ja: Translations = {
     reconnectPrompt: "次のサーバーへの再ログインが必要です：",
     manage: "サーバー",
   },
+  serverStatus: {
+    title: "サーバーの状態",
+    connected: "接続済み",
+    disconnected: "切断",
+  },
   auth: {
     subtitle: "前回の続きから始めよう。",
     loginTitle: "おかえりなさい。",
