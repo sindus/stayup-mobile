@@ -167,6 +167,10 @@ describe("FeedFluxList — multi-instance", () => {
   it("badges each flux with its instance name once several are connected", () => {
     setup({
       selectedProvider: "changelog",
+      instances: [
+        { id: "i1", url: "https://a.test", name: "Alpha", token: TOKEN },
+        { id: "i2", url: "https://b.test", name: "Beta", token: TOKEN },
+      ],
       fluxes: [
         { ...fluxes[0], instanceId: "i1", instanceName: "Alpha" },
         { ...fluxes[0], id: "l2", instanceId: "i2", instanceName: "Beta" },
@@ -174,6 +178,22 @@ describe("FeedFluxList — multi-instance", () => {
     })
     expect(screen.getByText("Alpha")).toBeTruthy()
     expect(screen.getByText("Beta")).toBeTruthy()
+  })
+
+  it("shows the current server name on the badge, not the one stamped at feed load", () => {
+    setup({
+      selectedProvider: "changelog",
+      instances: [
+        { id: "i1", url: "https://a.test", name: "Main", token: TOKEN },
+        { id: "i2", url: "https://b.test", name: "Beta", token: TOKEN },
+      ],
+      fluxes: [
+        { ...fluxes[0], instanceId: "i1", instanceName: "old-host.example" },
+        { ...fluxes[0], id: "l2", instanceId: "i2", instanceName: "Beta" },
+      ],
+    })
+    expect(screen.getByText("Main")).toBeTruthy()
+    expect(screen.queryByText("old-host.example")).toBeNull()
   })
 
   it("shows no instance badge with a single instance", () => {

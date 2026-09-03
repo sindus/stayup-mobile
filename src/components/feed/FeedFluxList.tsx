@@ -41,6 +41,10 @@ export function FeedFluxList({
   const primaryUserId = instances[0] ? decodeToken(instances[0].token).userId : ""
   const multiInstance = new Set(fluxes.map((f) => f.instanceId)).size > 1
   const unreadKey = (f: FeedFlux) => `${f.instanceId ?? ""}:${f.repository_id}`
+  // `flux.instanceName` est figé au chargement du feed ; on le re-résout depuis
+  // `instances` pour refléter un renommage de serveur fait entre-temps.
+  const instanceLabel = (f: FeedFlux) =>
+    instances.find((i) => i.id === f.instanceId)?.name ?? f.instanceName
 
   // Dynamique : les providers affichés sont ceux réellement présents dans les flux de
   // l'utilisateur, pas une liste fermée codée en dur.
@@ -212,7 +216,7 @@ export function FeedFluxList({
                           style={{ color: colors.dim }}
                           numberOfLines={1}
                         >
-                          {flux.instanceName}
+                          {instanceLabel(flux)}
                         </Text>
                       )}
                       {fluxUnread > 0 && (
