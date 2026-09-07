@@ -24,12 +24,13 @@ Application mobile StayUp — un lecteur unifié qui agrège vos sources de veil
 
 ## Fonctionnalités
 
-- **Feed unifié** — tous les providers agrégés, triés par date, filtrables par provider ou par flux.
+- **Feed unifié** — tous les providers agrégés, triés par date, filtrables par provider ou par flux. Chaque provider est rendu à partir du template d'affichage relayé par l'API, sans code dédié dans l'app.
+- **Plusieurs serveurs** — pointer l'app vers n'importe quelle instance `stayup-api` (vérifiée, avec création de compte, avant enregistrement), en suivre plusieurs à la fois, chaque ligne du feed portant un badge du serveur d'origine.
 - **Suivi de lecture** — items lus/non lus persistés localement, filtre « non lu », tout marquer lu.
 - **Lecteur d'articles** — vue plein écran avec navigation précédent/suivant.
-- **Gestion des flux** — ajout par identifiant (dépôt, chaîne, URL RSS), abonnement aux flux de scraping ou demande de nouveau flux.
+- **Gestion des flux** — ajout via le descripteur de formulaire du provider, abonnement à un flux existant ou demande de nouveau flux quand le provider est en validation manuelle.
 - **Authentification** — email/mot de passe et OAuth (GitHub, Google) via deep link `stayup://`.
-- **Thème & langue** — clair/sombre automatique, français et anglais.
+- **Thème & langue** — clair/sombre automatique ; anglais, français, allemand, espagnol, italien, portugais, japonais et chinois.
 
 ## Prérequis
 
@@ -79,8 +80,12 @@ tests/                Tests unitaires et composants
 
 ## API
 
-L'application consomme l'API StayUp (`https://stayup-api.r-sik.workers.dev`), configurée dans
-`src/lib/store.ts`. Le token JWT est conservé dans le keychain via `expo-secure-store`.
+L'app parle à une ou plusieurs instances `stayup-api`. La liste des instances est gérée
+dans `src/lib/store.ts` (`instances[0]` est la primaire) ; `DEFAULT_API_URL`
+(`https://stayup-api.r-sik.workers.dev`) sert de valeur par défaut au premier ajout, et
+chaque instance se choisit depuis l'écran de connexion ou le profil. Le token JWT de chaque
+instance est conservé dans le keychain via `expo-secure-store` (`tok_<id>`), les métadonnées
+en AsyncStorage.
 
 ## CI/CD
 
