@@ -5,9 +5,9 @@ import { useLanguage } from "@/context/LanguageContext"
 import { colors } from "@/theme"
 
 /**
- * Réglage de l'URL de l'API StayUp. Utilisé dans le profil (session ouverte) et
- * sur l'écran de connexion (avant toute session) — d'où `onChanged`, qui laisse
- * l'écran de connexion relire `/auth/config` après un changement.
+ * Setting for the StayUp API URL. Used in the profile (with a session) and on
+ * the login screen (before any session) — hence `onChanged`, which lets the
+ * login screen re-read `/auth/config` after a change.
  */
 export function ServerField({ onChanged }: { onChanged?: () => void }) {
   const { t } = useLanguage()

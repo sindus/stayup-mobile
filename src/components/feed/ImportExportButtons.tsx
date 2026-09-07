@@ -48,8 +48,8 @@ export function ImportExportButtons({ fluxes, userId, onImported }: ImportExport
     }
   }
 
-  // `scrap` (et tout provider `manual`) : on ne crée pas de flux à l'import, on
-  // s'abonne à un flux déjà validé s'il en existe un pour cette URL.
+  // `scrap` (and any `manual` provider): we do not create a flux on import, we
+  // subscribe to an already-approved flux if one exists for this URL.
   async function resolveFluxId(
     provider: string,
     url: string,

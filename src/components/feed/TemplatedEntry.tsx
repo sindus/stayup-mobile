@@ -13,8 +13,8 @@ interface TemplatedEntryProps {
   onPress?: () => void
 }
 
-/** Entrée de liste rendue à partir du template du connecteur — aucune
- *  connaissance du provider (tout vient de `template.list` + `template.item`). */
+/** List entry rendered from the connector template — no knowledge of the
+ *  provider (everything comes from `template.list` + `template.item`). */
 export function TemplatedEntry({ template, item, source, color, onPress }: TemplatedEntryProps) {
   const view = resolveItemView(template, item, source)
   const layout = template.list?.layout ?? "row"

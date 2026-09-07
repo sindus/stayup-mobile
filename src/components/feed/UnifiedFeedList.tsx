@@ -8,7 +8,7 @@ import { TemplatedEntry } from "./TemplatedEntry"
 import { providerIcon } from "./providerIcons"
 import { getTaggedItemId } from "@/store/readItems"
 
-/** Clé de source : `<instanceId>:<repository_id>`. */
+/** Source key: `<instanceId>:<repository_id>`. */
 const srcKey = (instanceId: unknown, repositoryId: unknown) =>
   `${typeof instanceId === "string" ? instanceId : ""}:${repositoryId}`
 

@@ -70,8 +70,8 @@ function OpenButton({
   )
 }
 
-/** Volet de lecture rendu depuis le template — `detail.mode` pilote tout.
- *  React Native : pas d'iframe ni de HTML brut (le mode `html` est réduit en texte). */
+/** Reading pane rendered from the template — `detail.mode` drives everything.
+ *  React Native: no iframe or raw HTML (the `html` mode is reduced to text). */
 export function TemplatedDetail({
   template,
   item,
@@ -214,8 +214,8 @@ export function TemplatedDetail({
   }
 
   if (mode === "audio") {
-    // Pas de lecteur audio natif embarqué (pas de dépendance expo-av) : pochette
-    // + notes + bouton qui ouvre le flux dans le lecteur système.
+    // No bundled native audio player (no expo-av dependency): cover art
+    // + notes + button that opens the stream in the system player.
     const cover = resolveText(d.image ?? fields.image, ctx)
     const notes = resolveText(d.body ?? fields.summary, ctx)
     return (

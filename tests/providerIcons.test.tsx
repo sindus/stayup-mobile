@@ -1,8 +1,7 @@
 /**
- * `providerIcons` (mobile) — le jeu d'icônes nommées n'est atteint que par un
- * `display.icon = "<clé>"` explicite ; les 5 connecteurs officiels fournissent
- * tous un tracé SVG. On exerce ici chaque icône nommée, l'image et le tracé
- * plein / `stroke`.
+ * `providerIcons` (mobile) — the named icon set is only reached by an explicit
+ * `display.icon = "<key>"`; the 5 official connectors all provide an SVG path.
+ * Here we exercise each named icon, the image and the filled / `stroke` path.
  */
 import type { ReactElement } from "react"
 import { render } from "@testing-library/react-native"

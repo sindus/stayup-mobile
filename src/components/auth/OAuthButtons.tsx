@@ -5,8 +5,8 @@ import { colors } from "@/theme"
 interface OAuthButtonsProps {
   onPress: (provider: "github" | "google") => Promise<void>
   loading: boolean
-  /** Quels boutons afficher — d'après `GET /auth/config` de l'instance visée.
-   *  Par défaut les deux, pour une API trop ancienne pour exposer la config. */
+  /** Which buttons to show — from the target instance's `GET /auth/config`.
+   *  Both by default, for an API too old to expose the config. */
   providers?: { github: boolean; google: boolean }
 }
 

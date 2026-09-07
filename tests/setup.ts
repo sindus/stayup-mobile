@@ -5,7 +5,7 @@ export const mockRouter = {
   dismiss: jest.fn(),
 }
 
-/** Rendu à la place de <Redirect /> : on inspecte ses props pour vérifier les redirections. */
+/** Rendered in place of <Redirect />: we inspect its props to verify redirects. */
 export const mockRedirect = jest.fn(() => null)
 
 const mockState: { params: Record<string, string> } = { params: {} }
@@ -14,7 +14,7 @@ export function setMockParams(params: Record<string, string>) {
   mockState.params = params
 }
 
-/** Cible de la redirection déclenchée pendant le rendu, ou null. */
+/** Target of the redirect triggered during render, or null. */
 export function redirectedTo(): string | null {
   const call = mockRedirect.mock.calls[0] as unknown as [{ href: string }] | undefined
   return call ? call[0].href : null
@@ -24,8 +24,8 @@ jest.mock("expo-router", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) => children ?? null
 
   /**
-   * Rend l'icône déclarée dans les options de l'onglet, afin que les callbacks
-   * `tabBarIcon` des écrans soient réellement exécutés par les tests.
+   * Renders the icon declared in the tab options, so that the screens'
+   * `tabBarIcon` callbacks are actually run by the tests.
    */
   const TabScreen = ({
     options,
@@ -80,14 +80,14 @@ jest.mock("react-native-gesture-handler", () => ({
 
 jest.mock("react-native-webview", () => ({ WebView: require("react-native").View }))
 
-// nativewind : son runtime natif n'est pas disponible sous Jest (cf. babel.config.js).
+// nativewind: its native runtime is not available under Jest (see babel.config.js).
 jest.mock("nativewind", () => ({
   colorScheme: { set: jest.fn(), get: jest.fn(() => "light") },
   useColorScheme: () => ({ colorScheme: "light", setColorScheme: jest.fn() }),
 }))
 
-// Icônes : chaque icône devient une <View testID="icon-<Nom>" />, ce qui donne
-// une prise stable sur les boutons qui n'affichent qu'une icône.
+// Icons: each icon becomes a <View testID="icon-<Name>" />, which gives a
+// stable handle on buttons that only show an icon.
 jest.mock("lucide-react-native", () => {
   const React = require("react")
   const { View } = require("react-native")

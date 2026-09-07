@@ -22,7 +22,7 @@ function makeProviders(lang: Language) {
   }
 }
 
-/** Rend un composant enveloppé dans les providers thème + langue (français par défaut). */
+/** Renders a component wrapped in the theme + language providers (French by default). */
 export function renderWithProviders(
   ui: ReactElement,
   options?: RenderOptions & { lang?: Language },

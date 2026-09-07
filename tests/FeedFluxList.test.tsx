@@ -107,7 +107,7 @@ describe("FeedFluxList", () => {
     const { onAddPress } = setup()
     await waitFor(() => expect(screen.getByTestId("icon-Plus")).toBeTruthy())
 
-    // Le bouton + arrête la propagation pour ne pas replier la section.
+    // The + button stops propagation so the section is not collapsed.
     const stopPropagation = jest.fn()
     fireEvent.press(screen.getByTestId("icon-Plus"), { stopPropagation })
 
@@ -132,7 +132,7 @@ describe("FeedFluxList", () => {
   it("shows the per-flux unread badge", async () => {
     setup({ selectedProvider: "changelog", unreadCountByRepoId: { "i1:10": 7 } })
 
-    // Le badge du provider et celui du flux affichent tous les deux 7.
+    // The provider badge and the flux badge both show 7.
     await waitFor(() => expect(screen.getAllByText("7")).toHaveLength(2))
   })
 
@@ -142,7 +142,7 @@ describe("FeedFluxList", () => {
 
     fireEvent.press(screen.getByText("Mes flux"))
 
-    // Replié : les chips disparaissent, le badge du filtre actif apparaît.
+    // Collapsed: the chips disappear, the active-filter badge appears.
     await waitFor(() => expect(screen.queryByText("Tous les flux")).toBeNull())
     expect(screen.getByText("YouTube")).toBeTruthy()
     expect(screen.getByTestId("icon-ChevronDown")).toBeTruthy()
@@ -212,7 +212,7 @@ describe("FeedFluxList — suppression", () => {
     fireEvent.press(screen.getByTestId("icon-Trash2"))
   }
 
-  /** Déclenche l'action destructive de la dernière Alert.alert. */
+  /** Triggers the destructive action of the last Alert.alert. */
   async function confirmAlert(spy: jest.SpyInstance) {
     const buttons = spy.mock.calls[0][2] as { text: string; onPress?: () => void }[]
     await buttons.find((b) => b.text === "Supprimer")!.onPress!()

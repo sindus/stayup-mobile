@@ -1,8 +1,8 @@
 /**
- * Rendu direct de `TemplatedDetail` (mobile) — un cas par `detail.mode` et par
- * branche de rendu. Le parcours nominal passe par `FeedDetailScreen` ; ici on
- * cible ce qu'il ne touche pas : `table` / `link-list`, l'ouverture d'un lien de
- * ligne ou d'une image de galerie, `openUrl` malformé, le repli d'HTML en texte.
+ * Direct rendering of `TemplatedDetail` (mobile) — one case per `detail.mode`
+ * and per render branch. The nominal path goes through `FeedDetailScreen`; here
+ * we target what it does not touch: `table` / `link-list`, opening a row link or
+ * a gallery image, malformed `openUrl`, the HTML-to-text fallback.
  */
 import { Linking } from "react-native"
 import { Image } from "expo-image"

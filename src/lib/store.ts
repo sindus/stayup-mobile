@@ -2,15 +2,15 @@ import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import type { Language } from "@/lib/translations"
 
-// Clés legacy (mono-API), lues une fois pour migrer.
+// Legacy keys (single-API), read once to migrate.
 const AUTH_KEY = "auth_token"
 const API_URL_KEY = "api_url"
 const LANG_KEY = "lang"
 const INSTANCES_KEY = "instances"
 export const DEFAULT_API_URL = "https://stayup-api.r-sik.workers.dev"
 
-/** Une session sur une instance d'API. `instances[0]` est la primaire. Le token
- *  vit dans le SecureStore (`tok_<id>`), les métadonnées en AsyncStorage. */
+/** A session on an API instance. `instances[0]` is the primary. The token lives
+ *  in SecureStore (`tok_<id>`), the metadata in AsyncStorage. */
 export interface Instance {
   id: string
   url: string

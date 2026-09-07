@@ -30,7 +30,7 @@ const TOKEN = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: "user-1"
   .replace(/=/g, "")}.sig`
 const INSTANCES = [{ id: "i1", url: API_URL, name: "Primary", token: TOKEN }]
 
-// `scrap` est le provider en mode `manual` dans ce jeu de fixtures.
+// `scrap` is the `manual`-mode provider in this fixture set.
 function providers() {
   return RAW_PROVIDERS.filter((p) => p.name !== "github_trending").map((p) => ({
     ...p,

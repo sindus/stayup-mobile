@@ -14,8 +14,8 @@ interface InstancesSheetProps {
   visible: boolean
   onClose: () => void
   auth: ReturnType<typeof useAuth>
-  /** Instances dont la session est morte : la feuille montre un bandeau et déplie
-   *  d'office le formulaire de reconnexion de la première. */
+  /** Instances whose session is dead: the sheet shows a banner and
+   *  automatically unfolds the first one's reconnect form. */
   autoReason?: { instanceId: string; instanceName: string }[]
 }
 
@@ -105,8 +105,8 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
   const [checked, setChecked] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Confirmation « compte créé, en attente d'un admin » : survit à la fermeture
-  // du formulaire d'ajout, contrairement à `error`.
+  // "account created, awaiting an admin" confirmation: survives the close of
+  // the add form, unlike `error`.
   const [notice, setNotice] = useState<string | null>(null)
   const [reconnectId, setReconnectId] = useState<string | null>(null)
 
@@ -115,8 +115,8 @@ export function InstancesSheet({ visible, onClose, auth, autoReason }: Instances
     [autoReason],
   )
 
-  // Reconnexion poussée automatiquement : déplie d'office le formulaire de la
-  // première instance concernée, sans écraser un choix déjà fait.
+  // Auto-pushed reconnect: automatically unfolds the first affected instance's
+  // form, without overwriting a choice already made.
   useEffect(() => {
     if (autoReason && autoReason.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect

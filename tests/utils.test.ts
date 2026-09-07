@@ -11,8 +11,8 @@ import {
 } from "../src/lib/utils"
 
 describe("extractIdentifier", () => {
-  // Le libellé riche par provider vient de `display.feedLabel` (resolveFeedLabel) ;
-  // ici ce n'est plus qu'un repli générique : schéma et `www.` retirés.
+  // The rich per-provider label comes from `display.feedLabel` (resolveFeedLabel);
+  // here it is now just a generic fallback: scheme and `www.` stripped.
   it("strips the scheme and www.", () => {
     expect(extractIdentifier("https://www.blog.example.com/feed.xml")).toBe(
       "blog.example.com/feed.xml",

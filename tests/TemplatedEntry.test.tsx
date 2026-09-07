@@ -1,8 +1,8 @@
 /**
- * Rendu direct de `TemplatedEntry` (ligne de liste, mobile). Le parcours nominal
- * passe par `UnifiedFeedList` ; ici on couvre les branches qu'il ne touche pas :
- * une entrée sans date / sans sous-titre / sans snippet, la vignette de repli du
- * layout `media`, et le layout `row` par défaut quand `list` est absent.
+ * Direct rendering of `TemplatedEntry` (list row, mobile). The nominal path goes
+ * through `UnifiedFeedList`; here we cover the branches it does not touch: an
+ * entry with no date / no subtitle / no snippet, the `media` layout's fallback
+ * thumbnail, and the default `row` layout when `list` is absent.
  */
 import { render, screen, fireEvent } from "@testing-library/react-native"
 import { TemplatedEntry } from "@/components/feed/TemplatedEntry"

@@ -320,9 +320,9 @@ describe("ProfileScreen", () => {
   })
 })
 
-describe("Écrans d'auth sur Android", () => {
-  // Les tests tournent par défaut sur la plateforme iOS : on bascule pour couvrir
-  // l'autre branche de `Platform.OS === "ios" ? "padding" : "height"`.
+describe("Auth screens on Android", () => {
+  // Tests run on the iOS platform by default: we switch to cover the other
+  // branch of `Platform.OS === "ios" ? "padding" : "height"`.
   let original: typeof Platform.OS
 
   beforeEach(() => {

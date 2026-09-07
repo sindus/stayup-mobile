@@ -21,7 +21,7 @@ import type { AppSession } from "@/lib/session"
 
 WebBrowser.maybeCompleteAuthSession()
 
-/** Une session, rattachée à son instance. `session` (compat) = la primaire. */
+/** A session, attached to its instance. `session` (compat) = the primary. */
 export interface InstanceSession extends AppSession {
   instanceId: string
   instanceName: string
@@ -33,9 +33,9 @@ export type AuthMethod =
   | { kind: "password"; email: string; password: string }
   | { kind: "oauth"; provider: "github" | "google" }
 
-/** Résultat d'une création de compte sur une instance : `{}` = compte actif et
- *  instance ajoutée ; `{ pending: true }` = instance en mode `approval`, compte
- *  en attente de validation admin (rien n'est ajouté) ; `{ error }` sinon. */
+/** Result of creating an account on an instance: `{}` = account active and
+ *  instance added; `{ pending: true }` = instance in `approval` mode, account
+ *  awaiting admin approval (nothing is added); `{ error }` otherwise. */
 export type RegisterInstanceResult = { pending?: boolean; error?: string }
 
 interface UseAuth {
@@ -69,8 +69,8 @@ function toSession(inst: Instance): InstanceSession {
   }
 }
 
-/** Récupère un token pour `url`. Renvoie `null` si l'OAuth est annulé (pas une
- *  erreur : l'appelant ne montre rien). */
+/** Gets a token for `url`. Returns `null` if OAuth is cancelled (not an error:
+ *  the caller shows nothing). */
 async function tokenFor(url: string, method: AuthMethod): Promise<string | null> {
   if (method.kind === "password") {
     return loginWithPassword(method.email, method.password, url)

@@ -59,8 +59,8 @@ describe("loginWithPassword", () => {
     expect(token).toBe("tok-123")
   })
 
-  // Le message affiché est traduit par useAuth à partir du statut : ici on vérifie
-  // seulement que le statut est bien porté par l'erreur.
+  // The displayed message is translated by useAuth from the status: here we
+  // only check that the status is carried by the error.
   it("throws an ApiError carrying the 401", async () => {
     mockFetch(401, {})
     await expect(loginWithPassword("a@b.com", "wrong", API_URL)).rejects.toMatchObject({
@@ -257,7 +257,7 @@ describe("apiFetch — corps d'erreur et rejeu", () => {
     await expect(getUserFeed("u1", "tok", API_URL)).rejects.toThrow("StayUp API error 418")
   })
 
-  // Un POST peut avoir été traité avant la coupure : le rejouer créerait un doublon.
+  // A POST may have been processed before the cut: replaying it would create a duplicate.
   it("does not replay a write that failed with a 5xx", async () => {
     mockFetch(500, {})
     await expect(

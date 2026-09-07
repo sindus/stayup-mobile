@@ -19,7 +19,7 @@ function stubStorage(values: Record<string, string> = {}) {
   asyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(values[key] ?? null))
 }
 
-/** Sélectionne un item comme le fait FeedScreen : item + template + source. */
+/** Selects an item the way FeedScreen does: item + template + source. */
 function select(tagged: TaggedItem, repoUrl = "", template?: ProviderTemplate | null) {
   useSelectedFeedItemStore.setState({
     item: tagged,

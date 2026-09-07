@@ -41,7 +41,7 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
   const [provider, setProvider] = useState<string>("changelog")
   const [identifier, setIdentifier] = useState("")
   const [pickMode, setPickMode] = useState<"existing" | "new">("existing")
-  // Flux entier (pas juste l'id) : un même id peut exister dans plusieurs bases.
+  // The whole flux (not just the id): the same id can exist in several databases.
   const [selectedFlux, setSelectedFlux] = useState<ProviderFlux | null>(null)
   const [fluxes, setFluxes] = useState<ProviderFlux[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -51,7 +51,7 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
   const [tpls, setTpls] = useState<Record<string, ProviderTemplate | null>>({})
   const [approvals, setApprovals] = useState<Record<string, "auto" | "manual">>({})
 
-  // Liste des providers : vient de l'API, aucun nom codé en dur ici.
+  // Provider list: comes from the API, no name hardcoded here.
   useEffect(() => {
     if (!visible || !active) return
     let cancelled = false
@@ -85,7 +85,7 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
     }
   }, [visible, active])
 
-  // Flux existants du provider sélectionné, sur l'instance choisie.
+  // Existing fluxes of the selected provider, on the chosen instance.
   useEffect(() => {
     if (!visible || !active) return
     let cancelled = false
@@ -183,12 +183,12 @@ export function AddFluxSheet({ visible, onClose, instances, onSuccess }: AddFlux
 
   const fluxesLoading = fluxes === null
   const availableFluxes = (fluxes ?? []).filter((f) => !f.is_subscribed)
-  // Libellé / placeholder du champ « ajouter » : ceux du connecteur (`form` du
-  // template), avec un repli générique. L'app ne connaît aucun provider en dur.
+  // Label / placeholder of the "add" field: the connector's (`form` in the
+  // template), with a generic fallback. The app knows no provider hardcoded.
   const inputLabel = currentForm?.label ?? t.addFlux.identifierLabels.generic
   const inputPlaceholder = currentForm?.placeholder ?? t.addFlux.placeholders.generic
-  // Étiquette d'un flux existant : rendue par le template du connecteur, comme
-  // dans la liste des flux (repli : URL sans schéma).
+  // An existing flux's label: rendered by the connector template, as in the
+  // flux list (fallback: URL without scheme).
   const fluxLabel = (f: ProviderFlux) =>
     resolveFeedLabel(tpls[provider], { url: f.url, config: f.config })
   const inputStyle = {

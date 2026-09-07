@@ -60,8 +60,8 @@ export const motion = {
   spin: 900,
 } as const
 
-// Métadonnées d'affichage d'un provider, dérivées de son template
-// (provider_registry.template). Sans template : couleur neutre + nom capitalisé.
+// A provider's display metadata, derived from its template
+// (provider_registry.template). No template: neutral color + capitalized name.
 export function getProviderMeta(
   name: string,
   tpl?: { display?: { name?: string; accent?: string } } | null,

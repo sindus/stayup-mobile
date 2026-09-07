@@ -5,9 +5,9 @@ import type { ProviderTemplate } from "@/lib/providerTemplate"
 import { resolveIcon } from "@/lib/providerTemplate"
 
 /**
- * Jeu d'icônes intégré (raccourci pour `display.icon = "<clé>"`). Un template
- * peut aussi fournir son propre tracé SVG, une data-URI ou une URL d'image.
- * React Native n'a pas de `currentColor` : la couleur est passée en paramètre.
+ * Built-in icon set (shortcut for `display.icon = "<key>"`). A template can also
+ * provide its own SVG path, a data URI or an image URL.
+ * React Native has no `currentColor`: the color is passed as a parameter.
  */
 const NAMED: Record<string, (size: number, color: string) => ReactNode> = {
   changelog: (s, c) => (
@@ -67,8 +67,8 @@ const NAMED: Record<string, (size: number, color: string) => ReactNode> = {
 }
 
 /**
- * Icône d'un provider, pilotée par `display.icon` :
- * clé du jeu intégré · tracé SVG `{ paths|d, viewBox, stroke }` · data-URI · URL image.
+ * A provider's icon, driven by `display.icon`:
+ * built-in set key · SVG path `{ paths|d, viewBox, stroke }` · data URI · image URL.
  */
 export function providerIcon(
   display: ProviderTemplate["display"] | undefined,

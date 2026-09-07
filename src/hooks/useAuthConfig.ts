@@ -3,12 +3,12 @@ import { type AuthConfig, fetchAuthConfig } from "@/lib/api"
 import { readApiUrl } from "@/lib/store"
 
 interface UseAuthConfig {
-  /** `null` tant que le premier appel n'a pas répondu, ou si l'API n'expose
-   *  pas `/auth/config` — l'appelant retombe alors sur des valeurs par défaut. */
+  /** `null` until the first call has responded, or if the API does not expose
+   *  `/auth/config` — the caller then falls back to default values. */
   config: AuthConfig | null
-  /** L'hôte de l'API actuellement visée (pour l'afficher). */
+  /** The host of the currently targeted API (for display). */
   apiHost: string
-  /** À rappeler après un changement d'URL d'API. */
+  /** Call again after an API URL change. */
   refresh: () => Promise<void>
 }
 

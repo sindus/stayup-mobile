@@ -41,13 +41,13 @@ export function FeedFluxList({
   const primaryUserId = instances[0] ? decodeToken(instances[0].token).userId : ""
   const multiInstance = new Set(fluxes.map((f) => f.instanceId)).size > 1
   const unreadKey = (f: FeedFlux) => `${f.instanceId ?? ""}:${f.repository_id}`
-  // `flux.instanceName` est figé au chargement du feed ; on le re-résout depuis
-  // `instances` pour refléter un renommage de serveur fait entre-temps.
+  // `flux.instanceName` is frozen at feed load; we re-resolve it from
+  // `instances` to reflect a server rename made in the meantime.
   const instanceLabel = (f: FeedFlux) =>
     instances.find((i) => i.id === f.instanceId)?.name ?? f.instanceName
 
-  // Dynamique : les providers affichés sont ceux réellement présents dans les flux de
-  // l'utilisateur, pas une liste fermée codée en dur.
+  // Dynamic: the providers shown are those actually present in the user's
+  // fluxes, not a closed hardcoded list.
   const providers = Array.from(new Set(fluxes.map((f) => f.provider)))
 
   function meta(p: Provider) {
@@ -81,7 +81,7 @@ export function FeedFluxList({
 
   return (
     <View className="border-b" style={{ borderColor: colors.borderSoft }}>
-      {/* Header bar — toujours visible */}
+      {/* Header bar — always visible */}
       <Pressable
         onPress={() => setExpanded((v) => !v)}
         className="flex-row items-center justify-between px-4 py-2.5"
@@ -90,7 +90,7 @@ export function FeedFluxList({
           <Text className="text-base font-semibold" style={{ color: colors.fg }}>
             {t.feed.myFeeds}
           </Text>
-          {/* Badge du filtre actif quand replié */}
+          {/* Active-filter badge when collapsed */}
           {!expanded && selectedProvider && (
             <View
               className="rounded-full px-2 py-0.5"
@@ -104,7 +104,7 @@ export function FeedFluxList({
         </View>
 
         <View className="flex-row items-center gap-2">
-          {/* Bouton + toujours accessible */}
+          {/* + button always accessible */}
           <Pressable
             onPress={(e) => {
               e.stopPropagation()
@@ -186,7 +186,7 @@ export function FeedFluxList({
             })}
           </ScrollView>
 
-          {/* Flux individuels (quand un provider est sélectionné) */}
+          {/* Individual fluxes (when a provider is selected) */}
           {selectedProvider && (
             <ScrollView
               horizontal

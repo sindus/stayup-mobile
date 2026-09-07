@@ -71,8 +71,8 @@ function feedResponse(rss = [rssItem(1, "Article A"), rssItem(2, "Article B")]) 
 }
 
 /**
- * AsyncStorage est partagé par la langue, le thème et les items lus : on répond
- * par clé pour ne pas injecter une liste d'ids là où une langue est attendue.
+ * AsyncStorage is shared by the language, the theme and the read items: we
+ * answer by key so as not to inject a list of ids where a language is expected.
  */
 const INSTANCE_ID = "i1"
 const INSTANCE_META = JSON.stringify([
@@ -84,7 +84,7 @@ function stubStorage(values: Record<string, string> = {}) {
   asyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(all[key] ?? null))
 }
 
-/** Marque des items comme déjà lus au démarrage. */
+/** Marks items as already read at startup. */
 function withReadItems(...ids: string[]) {
   stubStorage({ read_items: JSON.stringify(ids) })
 }
